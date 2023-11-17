@@ -51,11 +51,11 @@ pub enum HtmlElement {
     Code
 }
 
-pub trait WebFramework: Clone + 'static {
+pub trait WebFramework: Clone {
     type View;
     type HtmlCallback<T>: Clone;
     type Callback<A,B>: Clone;
-    type Setter<T: 'static>: Clone + 'static;
+    type Setter<T>: Clone;
     fn set<T>(&self, setter: &Self::Setter<T>, value: T);
     fn send_debug_info(&self, info: Vec<String>);
     fn el_with_attributes(&self, e: HtmlElement, inside: Self::View, attributes: ElementAttributes<Self>) -> Self::View;
@@ -73,9 +73,9 @@ pub trait WebFramework: Clone + 'static {
     fn el_text(&self, text: &str) -> Self::View;
     fn mount_dynamic_link(&self, rel: &str, href: &str, integrity: &str, crossorigin: &str);
     fn el_input_checkbox(&self, checked: bool, attributes: ElementAttributes<Self>) -> Self::View;
-    fn call_callback<A: 'static, B: 'static>(callback: &Self::Callback<A,B>, input: A) -> B;
-    fn call_html_callback<T: 'static>(callback: &Self::HtmlCallback<T>, input: T) -> Self::View;
-    fn make_callback<A: 'static, B: 'static, F: Fn(A)->B + 'static>(f: F) -> Self::Callback<A, B>;
+    fn call_callback<A, B>(callback: &Self::Callback<A,B>, input: A) -> B;
+    fn call_html_callback<T>(callback: &Self::HtmlCallback<T>, input: T) -> Self::View;
+    fn make_callback<A, B, F: Fn(A)->B>(f: F) -> Self::Callback<A, B>;
 }
 
 #[derive(Clone, Debug)]
