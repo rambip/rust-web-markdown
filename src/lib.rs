@@ -15,7 +15,7 @@ mod component;
 
 pub struct ElementAttributes<'a, F: WebFramework> {
     pub classes: Vec<&'a str>,
-    pub style: &'a str,
+    pub style: Option<&'a str>,
     pub inner_html: Option<&'a str>,
     pub on_click: Option<F::Callback<MouseEvent, ()>>
 }
@@ -23,7 +23,7 @@ pub struct ElementAttributes<'a, F: WebFramework> {
 impl<'a, F: WebFramework> Default for ElementAttributes<'a, F> {
     fn default() -> Self {
         Self {
-            style: "",
+            style: None,
             classes: vec![],
             inner_html: None,
             on_click: None

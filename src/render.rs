@@ -494,8 +494,9 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
                 let align = self.column_alignment.clone().unwrap()[self.cell_index];
                 self.cell_index += 1;
                 cx.el_with_attributes(Tcell, self.children(tag), 
-                      ElementAttributes{style:{align_string(align)},
-                      ..Default::default()}
+                      ElementAttributes{
+                          style:Some(align_string(align)),
+                          ..Default::default()}
                 )
             }
             Tag::Emphasis => cx.el(Italics, self.children(tag)),
