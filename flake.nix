@@ -1,5 +1,5 @@
 {
-    description = "random leptos project";
+    description = "Framework-agnostic markdown component ";
 
     inputs = {
         flake-utils.url = "github:numtide/flake-utils";
@@ -33,36 +33,14 @@
                     targets = [ "wasm32-unknown-unknown" ];
                 }
             );
-            craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
-
-            CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
             in
             {
-                checks = {};
-                packages = {
-                    default = craneLib.buildTrunkPackage {
-                        inherit CARGO_BUILD_TARGET;
-                        src=./.;
-                        pname = "random-leptos-project";
-                        trunkIndexPath = "./index.html";
-                        # trunkExtraBuildArgs = "--public-url=...";
-                        nativeBuildInputs = [
-                            (pkgs.wasm-bindgen-cli.override {
-                                version = "0.2.87";
-                                hash = "sha256-0u9bl+FkXEK2b54n7/l9JOCtKo+pb42GF9E1EnAUQa0=";
-                                cargoHash = "sha256-AsZBtE2qHJqQtuCt/wCAgOoxYMfvDh8IzBPAOkYSYko=";
-                            })
-                        ];
-                    };
-                };
-
                 devShells.default = pkgs.mkShell {
                     buildInputs = with pkgs; [
                         rustToolchain
                         binaryen
                         openssl 
                         pkg-config
-                        trunk
                         rust-analyzer
                     ];
                 };
