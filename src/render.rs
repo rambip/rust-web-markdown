@@ -31,6 +31,45 @@ use super::HtmlElement::*;
 use crate::component::ComponentCall;
 
 
+/// `highlight_code(content, ss, ts)` render the content `content`
+/// with syntax highlighting
+fn highlight_code(theme_name: Option<&str>, content: &str, kind: &CodeBlockKind) -> Option<String> {
+    let lang = match kind {
+        CodeBlockKind::Fenced(x) => x,
+        CodeBlockKind::Indented => return None
+    };
+
+    let theme_name = theme_name
+        .clone()
+        .unwrap_or("base16-ocean.light");
+    let theme = THEME_SET.themes.get(theme_name)
+        .expect("unknown theme")
+        .clone();
+
+    Some(
+        syntect::html::highlighted_html_for_string(
+            content,
+            &SYNTAX_SET,
+            SYNTAX_SET.find_syntax_by_token(lang)?,
+            &theme
+            ).ok()?
+    )
+}
+
+
+
+
+/// `align_string(align)` gives the css string
+/// that is used to align text according to `align`
+fn align_string(align: Alignment) -> &'static str {
+    match align {
+        Alignment::Left => "text-align: left",
+        Alignment::Right => "text-align: right",
+        Alignment::Center => "text-align: center",
+        Alignment::None => "",
+    }
+}
+
 impl<'a, F: WebFramework> MarkdownProps<'a, F> 
 {
     fn make_callback(self, position: Range<usize>) 
@@ -87,7 +126,7 @@ impl<'a, F: WebFramework> MarkdownProps<'a, F>
             on_click: Some(callback),
             ..Default::default()
         };
-        cx.el_code(cx.el_text(s), attributes)
+        cx.el_with_attributes(Code, cx.el_text(s), attributes)
     }
 
     fn render_code_block(
@@ -99,7 +138,7 @@ impl<'a, F: WebFramework> MarkdownProps<'a, F>
         ) -> F::View {
         let content = match string_content {
             Some(x) => x,
-            None => return cx.el_code(cx.el_empty(), Default::default())
+            None => return cx.el(Code, cx.el_empty())
         };
 
         let callback = self.make_callback(range.clone());
@@ -115,7 +154,8 @@ impl<'a, F: WebFramework> MarkdownProps<'a, F>
         };
 
         match highlight_code(self.theme, &content, &k) {
-            None => cx.el_code(
+            None => cx.el_with_attributes(
+                Code,
                 cx.el_with_attributes(Pre, cx.el_empty(), pre_attributes(&content)),
                 code_attributes
             ),
@@ -199,7 +239,6 @@ impl ToString for HtmlError {
 }
 
 
-use Event::*;
 
 
 
@@ -234,6 +273,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
     type Item = F::View;
 
     fn next(&mut self) -> Option<Self::Item> {
+        use Event::*;
         let (item, range) = self.stream.next()? ;
         let range = range.clone();
 
@@ -453,7 +493,10 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
             Tag::TableCell => {
                 let align = self.column_alignment.clone().unwrap()[self.cell_index];
                 self.cell_index += 1;
-                render_cell(cx, self.children(tag), &align)
+                cx.el_with_attributes(Tcell, self.children(tag), 
+                      ElementAttributes{style:{align_string(align)},
+                      ..Default::default()}
+                )
             }
             Tag::Emphasis => cx.el(Italics, self.children(tag)),
             Tag::Strong => cx.el(Bold, self.children(tag)),
@@ -489,59 +532,5 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
             }
         })
     }
-}
-
-
-
-
-
-
-
-/// `highlight_code(content, ss, ts)` render the content `content`
-/// with syntax highlighting
-fn highlight_code(theme_name: Option<&str>, content: &str, kind: &CodeBlockKind) -> Option<String> {
-    let lang = match kind {
-        CodeBlockKind::Fenced(x) => x,
-        CodeBlockKind::Indented => return None
-    };
-
-    let theme_name = theme_name
-        .clone()
-        .unwrap_or("base16-ocean.light");
-    let theme = THEME_SET.themes.get(theme_name)
-        .expect("unknown theme")
-        .clone();
-
-    Some(
-        syntect::html::highlighted_html_for_string(
-            content,
-            &SYNTAX_SET,
-            SYNTAX_SET.find_syntax_by_token(lang)?,
-            &theme
-            ).ok()?
-    )
-}
-
-
-
-
-/// `align_string(align)` gives the css string
-/// that is used to align text according to `align`
-fn align_string(align: &Alignment) -> &'static str {
-    match align {
-        Alignment::Left => "text-align: left",
-        Alignment::Right => "text-align: right",
-        Alignment::Center => "text-align: center",
-        Alignment::None => "",
-    }
-}
-
-/// `render_cell(cell, align, context)` renders cell as html,
-/// and use `align` to 
-fn render_cell<'a, F: WebFramework> (cx: F, 
-                                     content: F::View, 
-                                     align: &'a Alignment
-    ) -> F::View{
-    cx.el_with_attributes(Tcell, content, ElementAttributes{style:{align_string(align)},..Default::default()})
 }
 

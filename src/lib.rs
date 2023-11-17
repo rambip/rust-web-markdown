@@ -48,6 +48,7 @@ pub enum HtmlElement {
     Bold,
     StrikeThrough,
     Pre,
+    Code
 }
 
 pub trait WebFramework: Clone + 'static {
@@ -61,10 +62,8 @@ pub trait WebFramework: Clone + 'static {
     fn el(&self, e: HtmlElement, inside: Self::View) -> Self::View {
         self.el_with_attributes(e, inside, Default::default())
     }
-    // TODO: el_with_callback
     fn el_hr(&self, attributes: ElementAttributes<Self>) -> Self::View;
     fn el_br(&self)-> Self::View;
-    fn el_code(&self, inside: Self::View, attributes: ElementAttributes<Self>)-> Self::View;
     fn el_fragment(&self, children: Vec<Self::View>) -> Self::View;
     fn el_a(&self, children: Self::View, href: &str) -> Self::View;
     fn el_img(&self, src: &str, alt: &str) -> Self::View;
