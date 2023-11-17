@@ -53,8 +53,8 @@ pub enum HtmlElement {
 
 pub trait WebFramework<'callback>: Clone {
     type View;
-    type HtmlCallback<T>: Clone + 'callback;
-    type Callback<A, B>: Clone + 'callback;
+    type HtmlCallback<T: 'callback>: Clone + 'callback;
+    type Callback<A: 'callback, B: 'callback>: Clone + 'callback;
     type Setter<T>: Clone;
     fn set<T>(&self, setter: &Self::Setter<T>, value: T);
     fn send_debug_info(&self, info: Vec<String>);
@@ -120,7 +120,7 @@ pub struct MdComponentProps<'callback, F: WebFramework<'callback>> {
 
 
 #[derive(Clone)]
-pub struct MarkdownProps<'a, 'callback, F: WebFramework<'callback>> 
+pub struct MarkdownProps<'a, 'callback, F: WebFramework<'callback> + 'callback> 
 {
     pub on_click: Option<&'a F::Callback<MarkdownMouseEvent, ()>>,
 
