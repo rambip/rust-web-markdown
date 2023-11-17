@@ -13,14 +13,14 @@ mod utils;
 mod component;
 
 
-pub struct ElementAttributes<'a, F: WebFramework<'a>> {
+pub struct ElementAttributes<'callback, F: WebFramework<'callback>> {
     pub classes: Vec<String>,
     pub style: Option<String>,
     pub inner_html: Option<String>,
     pub on_click: Option<F::Callback<MouseEvent, ()>>
 }
 
-impl<'a, F: WebFramework<'a>> Default for ElementAttributes<'a, F> {
+impl<'callback, F: WebFramework<'callback>> Default for ElementAttributes<'callback,  F> {
     fn default() -> Self {
         Self {
             style: None,
@@ -51,18 +51,18 @@ pub enum HtmlElement {
     Code
 }
 
-pub trait WebFramework<'life>: Clone {
+pub trait WebFramework<'callback>: Clone {
     type View;
-    type HtmlCallback<T>: Clone;
-    type Callback<A, B>: Clone;
+    type HtmlCallback<T>: Clone + 'callback;
+    type Callback<A, B>: Clone + 'callback;
     type Setter<T>: Clone;
     fn set<T>(&self, setter: &Self::Setter<T>, value: T);
     fn send_debug_info(&self, info: Vec<String>);
-    fn el_with_attributes(&self, e: HtmlElement, inside: Self::View, attributes: ElementAttributes<'life, Self>) -> Self::View;
+    fn el_with_attributes(&self, e: HtmlElement, inside: Self::View, attributes: ElementAttributes<'callback, Self>) -> Self::View;
     fn el(&self, e: HtmlElement, inside: Self::View) -> Self::View {
         self.el_with_attributes(e, inside, Default::default())
     }
-    fn el_hr(&self, attributes: ElementAttributes<'life, Self>) -> Self::View;
+    fn el_hr(&self, attributes: ElementAttributes<'callback, Self>) -> Self::View;
     fn el_br(&self)-> Self::View;
     fn el_fragment(&self, children: Vec<Self::View>) -> Self::View;
     fn el_a(&self, children: Self::View, href: &str) -> Self::View;
@@ -72,10 +72,10 @@ pub trait WebFramework<'life>: Clone {
     }
     fn el_text(&self, text: &str) -> Self::View;
     fn mount_dynamic_link(&self, rel: &str, href: &str, integrity: &str, crossorigin: &str);
-    fn el_input_checkbox(&self, checked: bool, attributes: ElementAttributes<'life, Self>) -> Self::View;
+    fn el_input_checkbox(&self, checked: bool, attributes: ElementAttributes<'callback, Self>) -> Self::View;
     fn call_callback<A, B>(callback: &Self::Callback<A,B>, input: A) -> B;
     fn call_html_callback<T>(callback: &Self::HtmlCallback<T>, input: T) -> Self::View;
-    fn make_callback<A, B, F: Fn(A)->B + 'life>(f: F) -> Self::Callback<A, B>;
+    fn make_callback<A, B, F: Fn(A)->B + 'callback>(f: F) -> Self::Callback<A, B>;
 }
 
 #[derive(Clone, Debug)]
@@ -93,7 +93,7 @@ pub struct MarkdownMouseEvent {
 
 /// the description of a link, used to render it with a custom callback.
 /// See [pulldown_cmark::Tag::Link] for documentation
-pub struct LinkDescription<'a, F: WebFramework<'a>> {
+pub struct LinkDescription<'callback, F: WebFramework<'callback>> {
     /// the url of the link
     pub url: String,
 
@@ -113,18 +113,18 @@ pub struct LinkDescription<'a, F: WebFramework<'a>> {
 
 
 #[derive(PartialEq)]
-pub struct MdComponentProps<'life, F: WebFramework<'life>> {
+pub struct MdComponentProps<'callback, F: WebFramework<'callback>> {
     pub attributes: Vec<(String, String)>,
     pub children: F::View
 }
 
 
 #[derive(Clone)]
-pub struct MarkdownProps<'a, F: WebFramework<'a>> 
+pub struct MarkdownProps<'a, 'callback, F: WebFramework<'callback>> 
 {
     pub on_click: Option<&'a F::Callback<MarkdownMouseEvent, ()>>,
 
-    pub render_links: Option<&'a F::HtmlCallback<LinkDescription<'a, F>>>,
+    pub render_links: Option<&'a F::HtmlCallback<LinkDescription<'callback, F>>>,
 
     pub theme: Option<&'a str>,
 
@@ -134,17 +134,17 @@ pub struct MarkdownProps<'a, F: WebFramework<'a>>
 
     pub parse_options: Option<&'a pulldown_cmark_wikilink::Options>,
 
-    pub components: &'a HashMap<String, F::HtmlCallback<MdComponentProps<'a, F>>>,
+    pub components: &'a HashMap<String, F::HtmlCallback<MdComponentProps<'callback, F>>>,
 
     pub frontmatter: Option<&'a F::Setter<String>>
 }
 
-impl<'a, F: WebFramework<'a>> Copy for MarkdownProps<'a, F> {}
+impl<'a, 'callback, F: WebFramework<'callback>> Copy for MarkdownProps<'a, 'callback, F> {}
 
-pub fn render_markdown<'a, F: WebFramework<'a>>(
+pub fn render_markdown<'a, 'callback, F: WebFramework<'callback>>(
     cx: F, 
     source: &'a str, 
-    props: MarkdownProps<'a, F>
+    props: MarkdownProps<'a, 'callback, F>
     ) -> F::View {
 
     let parse_options_default = Options::all();

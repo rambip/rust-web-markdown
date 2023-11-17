@@ -70,7 +70,7 @@ fn align_string(align: Alignment) -> String {
     }.to_string()
 }
 
-impl<'a, F: WebFramework<'a>> MarkdownProps<'a, F> 
+impl<'a, 'callback, F: WebFramework<'callback>> MarkdownProps<'a, 'callback, F> 
 {
     fn make_callback(self, position: Range<usize>) 
         -> F::Callback<MouseEvent, ()>
@@ -210,7 +210,7 @@ impl<'a, F: WebFramework<'a>> MarkdownProps<'a, F>
         }
     }
 
-    fn render_link(self, cx: F, link: LinkDescription<'a, F>) 
+    fn render_link(self, cx: F, link: LinkDescription<'callback, F>) 
         -> Result<F::View, HtmlError> 
     {
         match (&self.render_links, link.image) {
@@ -242,13 +242,13 @@ impl ToString for HtmlError {
 
 
 
-pub struct Renderer<'a, 'c, I, F>
+pub struct Renderer<'a, 'callback, 'c, I, F>
 where I: Iterator<Item=(Event<'a>, Range<usize>)>,
-      F: WebFramework<'a> 
+      F: WebFramework<'callback>,
 {
     cx: F,
 
-    props: MarkdownProps<'a, F>,
+    props: MarkdownProps<'a, 'callback, F>,
     stream: &'c mut I,
     // TODO: Vec<Alignment> to &[Alignment] to avoid cloning.
     // But it requires to provide the right lifetime
@@ -266,9 +266,9 @@ fn is_probably_custom_component(raw_html: &str) -> bool {
         == 2
 }
 
-impl<'a, 'c, I, F> Iterator for Renderer<'a, 'c, I, F> 
+impl<'a, 'callback, 'c, I, F> Iterator for Renderer<'a, 'callback, 'c, I, F> 
 where I: Iterator<Item=(Event<'a>, Range<usize>)>,
-      F: WebFramework<'a>
+      F: WebFramework<'callback>
 {
     type Item = F::View;
 
@@ -323,11 +323,11 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
 }
 
 
-impl<'a, 'c, I, F> Renderer<'a, 'c, I, F> 
+impl<'a, 'callback, 'c, I, F> Renderer<'a, 'callback, 'c, I, F> 
 where I: Iterator<Item=(Event<'a>, Range<usize>)>,
-      F: WebFramework<'a>
+      F: WebFramework<'callback>,
 {
-    pub fn new(cx: F, props: MarkdownProps<'a, F>, events: &'c mut I)-> Self 
+    pub fn new(cx: F, props: MarkdownProps<'a, 'callback, F>, events: &'c mut I)-> Self 
     {
 
         Self {
