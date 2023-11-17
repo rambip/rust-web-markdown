@@ -53,10 +53,10 @@ pub enum HtmlElement {
 
 pub trait WebFramework: Clone + 'static {
     type View;
-    type HtmlCallback<T: 'static>: Clone + 'static;
-    type Callback<A: 'static,B: 'static>: Clone + 'static;
+    type HtmlCallback<T>: Clone;
+    type Callback<A,B>: Clone;
     type Setter<T: 'static>: Clone + 'static;
-    fn set<T: 'static>(&self, setter: &Self::Setter<T>, value: T);
+    fn set<T>(&self, setter: &Self::Setter<T>, value: T);
     fn send_debug_info(&self, info: Vec<String>);
     fn el_with_attributes(&self, e: HtmlElement, inside: Self::View, attributes: ElementAttributes<Self>) -> Self::View;
     fn el(&self, e: HtmlElement, inside: Self::View) -> Self::View {
