@@ -70,10 +70,10 @@ fn align_string(align: Alignment) -> String {
     }.to_string()
 }
 
-impl<'a, F: WebFramework> MarkdownProps<'a, F> 
+impl<'a, F: WebFramework<'a>> MarkdownProps<'a, F> 
 {
     fn make_callback(self, position: Range<usize>) 
-        -> F::Callback<'a, MouseEvent, ()>
+        -> F::Callback<MouseEvent, ()>
     {
         let callback = self.on_click.cloned();
         let f = move |x| {
@@ -210,7 +210,7 @@ impl<'a, F: WebFramework> MarkdownProps<'a, F>
         }
     }
 
-    fn render_link(self, cx: F, link: LinkDescription<F>) 
+    fn render_link(self, cx: F, link: LinkDescription<'a, F>) 
         -> Result<F::View, HtmlError> 
     {
         match (&self.render_links, link.image) {
@@ -244,7 +244,7 @@ impl ToString for HtmlError {
 
 pub struct Renderer<'a, 'c, I, F>
 where I: Iterator<Item=(Event<'a>, Range<usize>)>,
-      F: WebFramework 
+      F: WebFramework<'a> 
 {
     cx: F,
 
@@ -268,7 +268,7 @@ fn is_probably_custom_component(raw_html: &str) -> bool {
 
 impl<'a, 'c, I, F> Iterator for Renderer<'a, 'c, I, F> 
 where I: Iterator<Item=(Event<'a>, Range<usize>)>,
-      F: WebFramework
+      F: WebFramework<'a>
 {
     type Item = F::View;
 
@@ -325,7 +325,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
 
 impl<'a, 'c, I, F> Renderer<'a, 'c, I, F> 
 where I: Iterator<Item=(Event<'a>, Range<usize>)>,
-      F: WebFramework
+      F: WebFramework<'a>
 {
     pub fn new(cx: F, props: MarkdownProps<'a, F>, events: &'c mut I)-> Self 
     {
