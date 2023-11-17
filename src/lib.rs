@@ -72,7 +72,7 @@ pub trait WebFramework: Clone + 'static {
         self.el_fragment(vec![])
     }
     fn el_text(&self, text: &str) -> Self::View;
-    fn mount_dynamic_link(&self, rel: &str, href: &str, integrity: &str, crossorigin: &str) -> Self::View;
+    fn mount_dynamic_link(&self, rel: &str, href: &str, integrity: &str, crossorigin: &str);
     fn el_input_checkbox(&self, checked: bool, attributes: ElementAttributes<Self>) -> Self::View;
     fn call_callback<A: 'static, B: 'static>(callback: &Self::Callback<A,B>, input: A) -> B;
     fn call_html_callback<T: 'static>(callback: &Self::HtmlCallback<T>, input: T) -> Self::View;
