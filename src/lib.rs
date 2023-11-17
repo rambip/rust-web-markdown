@@ -55,7 +55,7 @@ pub trait WebFramework<'callback>: Clone {
     type View;
     type HtmlCallback<T: 'callback>: Clone + 'callback;
     type Callback<A: 'callback, B: 'callback>: Clone + 'callback;
-    type Setter<T>: Clone;
+    type Setter<T: 'static>: Clone;
     fn set<T>(&self, setter: &Self::Setter<T>, value: T);
     fn send_debug_info(&self, info: Vec<String>);
     fn el_with_attributes(&self, e: HtmlElement, inside: Self::View, attributes: ElementAttributes<'callback, Self>) -> Self::View;
