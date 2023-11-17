@@ -419,7 +419,6 @@ dependencies = [
  "lazy_static",
  "pulldown-cmark-wikilink",
  "syntect",
- "wasm-bindgen",
  "web-sys",
 ]
 
