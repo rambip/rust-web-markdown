@@ -75,7 +75,7 @@ pub trait WebFramework: Clone {
     fn el_input_checkbox(&self, checked: bool, attributes: ElementAttributes<Self>) -> Self::View;
     fn call_callback<'a, A, B>(callback: &Self::Callback<'a, A,B>, input: A) -> B;
     fn call_html_callback<'a, T>(callback: &Self::HtmlCallback<'a, T>, input: T) -> Self::View;
-    fn make_callback<'a, A, B, F: Fn(A)->B>(f: F) -> Self::Callback<'a, A, B>;
+    fn make_callback<'a, A, B, F: Fn(A)->B + 'a>(f: F) -> Self::Callback<'a, A, B>;
 }
 
 #[derive(Clone, Debug)]
