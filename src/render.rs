@@ -67,10 +67,10 @@ fn render_code_block<'a, 'callback, F: Context<'callback>>(
         None => return cx.el(Code, cx.el_empty())
     };
 
-    let callback = cx.make_md_callback(range.clone());
+    let callback = cx.make_md_handler(range.clone());
 
     let code_attributes = ElementAttributes{
-        on_click: Some(cx.make_md_callback(range)),
+        on_click: Some(cx.make_md_handler(range)),
         ..Default::default()
     };
 
@@ -111,7 +111,7 @@ fn render_maths<'a, 'callback, F: Context<'callback>>(cx: &'a F, content: &str, 
         MathMode::Display => "math-flow",
     };
 
-    let callback = cx.make_md_callback(range);
+    let callback = cx.make_md_handler(range);
 
     match katex::render_with_opts(content, opts){
         Ok(x) => Ok(cx.el_with_attributes(
@@ -262,7 +262,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
                     Some(self.custom_component(s))
                 },
                 (None, _) => {
-                    let callback = self.cx.make_md_callback(range);
+                    let callback = self.cx.make_md_handler(range);
                     Some(Ok(self.cx.el_with_attributes(
                                 Span,
                                 self.cx.el_empty(),
@@ -318,14 +318,14 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
             };
             let children = self.cx.el_fragment(sub_renderer.collect());
             Ok(
-                self.cx.call_html_callback(comp, MdComponentProps{
+                F::call_html_callback(comp, MdComponentProps{
                 attributes: description.attributes,
                 children
             }))
         }
         else {
             Ok(
-                self.cx.call_html_callback(comp, MdComponentProps{
+                F::call_html_callback(comp, MdComponentProps{
                     attributes: description.attributes, 
                     children: self.cx.el_empty()
                 })

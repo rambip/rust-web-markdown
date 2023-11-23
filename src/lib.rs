@@ -75,11 +75,11 @@ pub trait Context<'callback>: Clone
     fn el_text(&self, text: &str) -> Self::View;
     fn mount_dynamic_link(&self, rel: &str, href: &str, integrity: &str, crossorigin: &str);
     fn el_input_checkbox(&self, checked: bool, attributes: ElementAttributes<Self::Handler<MouseEvent>>) -> Self::View;
-    fn call_handler<T>(&self, callback: &Self::Handler<T>, input: T);
-    fn call_html_callback<T>(&self, callback: &Self::HtmlCallback<T>, input: T) -> Self::View;
-    fn make_handler<T, F: Fn(T)>(&self, f: F) -> Self::Handler<T>;
+    fn call_handler<T>(callback: &Self::Handler<T>, input: T);
+    fn call_html_callback<T>(callback: &Self::HtmlCallback<T>, input: T) -> Self::View;
+    fn make_handler<T: 'callback, F: Fn(T) + 'callback>(f: F) -> Self::Handler<T>;
 
-    fn make_md_callback(&self, position: Range<usize>) 
+    fn make_md_handler(&self, position: Range<usize>) 
         -> Self::Handler<MouseEvent>
     {
         let callback = self.props().on_click.cloned();
@@ -90,14 +90,14 @@ pub trait Context<'callback>: Clone
                 position: position.clone()
             };
             match &callback {
-                Some(cb) => self.call_handler(cb, click_event),
+                Some(cb) => Self::call_handler(cb, click_event),
                 _ => ()
             }
         };
-        self.make_handler(f)
+        Self::make_handler(f)
     }
 
-    fn render_tasklist_marker(&self, m: bool, position: Range<usize>) 
+    fn render_tasklist_marker(&'callback self, m: bool, position: Range<usize>) 
         -> Self::View {
         let callback = self.props().on_click.cloned();
         let callback = move |e: MouseEvent| {
@@ -108,12 +108,12 @@ pub trait Context<'callback>: Clone
                 position: position.clone()
             };
             if let Some(cb) = callback.clone() {
-                self.call_handler(&cb, click_event)
+                Self::call_handler(&cb, click_event)
             }
         };
 
         let attributes = ElementAttributes {
-            on_click: Some(self.make_handler(callback)),
+            on_click: Some(Self::make_handler(callback)),
             ..Default::default()
         };
         self.el_input_checkbox(m, attributes)
@@ -121,7 +121,7 @@ pub trait Context<'callback>: Clone
 
     fn render_rule(&self, range: Range<usize>) -> Self::View {
         let attributes = ElementAttributes{
-            on_click: Some(self.make_md_callback(range)),
+            on_click: Some(self.make_md_handler(range)),
             ..Default::default()
         };
         self.el_hr(attributes)
@@ -129,7 +129,7 @@ pub trait Context<'callback>: Clone
 
 
     fn render_code(&self, s: &str, range: Range<usize>) -> Self::View {
-        let callback = self.make_md_callback(range.clone());
+        let callback = self.make_md_handler(range.clone());
         let attributes = ElementAttributes{
             on_click: Some(callback),
             ..Default::default()
@@ -139,7 +139,7 @@ pub trait Context<'callback>: Clone
 
 
     fn render_text(&self, s: &str, range: Range<usize>) -> Self::View{
-        let callback = self.make_md_callback(range);
+        let callback = self.make_md_handler(range);
         let attributes = ElementAttributes{
             on_click: Some(callback),
             ..Default::default()
@@ -152,7 +152,7 @@ pub trait Context<'callback>: Clone
         -> Self::View 
     {
         match (&self.props().render_links, link.image) {
-            (Some(f), _) => self.call_html_callback(&f, link),
+            (Some(f), _) => Self::call_html_callback(&f, link),
             (None, false) => self.el_a(link.content, &link.url),
             (None, true) => self.el_img(&link.url, &link.title),
         }
