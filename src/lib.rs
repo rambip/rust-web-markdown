@@ -60,11 +60,11 @@ pub trait Context<'callback>: Clone
     fn props<'a>(&'a self) -> MarkdownProps<'a, 'callback, Self>;
     fn set<T>(&self, setter: &Self::Setter<T>, value: T);
     fn send_debug_info(&self, info: Vec<String>);
-    fn el_with_attributes(&self, e: HtmlElement, inside: Self::View, attributes: ElementAttributes<Self::Handler<MarkdownMouseEvent>>) -> Self::View;
+    fn el_with_attributes(&self, e: HtmlElement, inside: Self::View, attributes: ElementAttributes<Self::Handler<MouseEvent>>) -> Self::View;
     fn el(&self, e: HtmlElement, inside: Self::View) -> Self::View {
         self.el_with_attributes(e, inside, Default::default())
     }
-    fn el_hr(&self, attributes: ElementAttributes<Self::Handler<MarkdownMouseEvent>>) -> Self::View;
+    fn el_hr(&self, attributes: ElementAttributes<Self::Handler<MouseEvent>>) -> Self::View;
     fn el_br(&self)-> Self::View;
     fn el_fragment(&self, children: Vec<Self::View>) -> Self::View;
     fn el_a(&self, children: Self::View, href: &str) -> Self::View;
@@ -74,13 +74,13 @@ pub trait Context<'callback>: Clone
     }
     fn el_text(&self, text: &str) -> Self::View;
     fn mount_dynamic_link(&self, rel: &str, href: &str, integrity: &str, crossorigin: &str);
-    fn el_input_checkbox(&self, checked: bool, attributes: ElementAttributes<Self::Handler<MarkdownMouseEvent>>) -> Self::View;
+    fn el_input_checkbox(&self, checked: bool, attributes: ElementAttributes<Self::Handler<MouseEvent>>) -> Self::View;
     fn call_handler<T>(&self, callback: &Self::Handler<T>, input: T);
     fn call_html_callback<T>(&self, callback: &Self::HtmlCallback<T>, input: T) -> Self::View;
-    fn make_handler<T, F: Fn(T)>(&self, f: F) -> Self::Handler<MarkdownMouseEvent>;
+    fn make_handler<T, F: Fn(T)>(&self, f: F) -> Self::Handler<MouseEvent>;
 
     fn make_md_callback(&self, position: Range<usize>) 
-        -> Self::Handler<MarkdownMouseEvent>
+        -> Self::Handler<MouseEvent>
     {
         let callback = self.props().on_click.cloned();
 
