@@ -56,7 +56,7 @@ pub trait Context<'callback>: Sized
     type View: Clone + 'callback;
     type HtmlCallback<T: 'callback>: Clone + 'callback;
     type Handler<T: 'callback>: Clone + 'callback;
-    type Setter<T>: Clone;
+    type Setter<T: 'static>: Clone;
     fn props<'a>(&'a self) -> MarkdownProps<'a, 'callback, Self>;
     fn set<T>(&self, setter: &Self::Setter<T>, value: T);
     fn send_debug_info(&self, info: Vec<String>);
