@@ -1,6 +1,6 @@
 use pulldown_cmark_wikilink::{ParserOffsetIter, LinkType, Event};
 pub use pulldown_cmark_wikilink::Options;
-use web_sys::MouseEvent;
+pub use web_sys::MouseEvent;
 
 use core::ops::Range;
 use std::collections::HashMap;
