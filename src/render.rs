@@ -56,7 +56,7 @@ fn highlight_code(theme_name: Option<&str>, content: &str, kind: &CodeBlockKind)
 }
 
 
-fn render_code_block<'a, F: Context<'a>>(
+fn render_code_block<'a, 'callback, F: Context<'callback>>(
     cx: &'a F,
     string_content: Option<String>,
     k: &CodeBlockKind,
@@ -99,7 +99,7 @@ fn render_code_block<'a, F: Context<'a>>(
 
 /// `render_maths(content)` returns a html node
 /// with the latex content `content` compiled inside
-fn render_maths<'a, F: Context<'a>>(cx: &'a F, content: &str, display_mode: &MathMode, range: Range<usize>) 
+fn render_maths<'a, 'callback, F: Context<'callback>>(cx: &'a F, content: &str, display_mode: &MathMode, range: Range<usize>) 
     -> Result<F::View, HtmlError>{
     let opts = katex::Opts::builder()
         .display_mode(*display_mode == MathMode::Display)
