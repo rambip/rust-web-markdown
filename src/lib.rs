@@ -76,7 +76,7 @@ pub trait Context<'a>: 'a + Clone {
     fn el_input_checkbox(&self, checked: bool, attributes: ElementAttributes<'a, Self>) -> Self::View;
     fn call_handler<'b, T>(&self, callback: &Self::Handler<'b, T>, input: T);
     fn call_html_callback<T>(&self, callback: &Self::HtmlCallback<T>, input: T) -> Self::View;
-    fn make_handler<'b, T, F: FnMut(T)>(&self, f: F) -> Self::Handler<'b, T>;
+    fn make_handler<'b, T, F: Fn(T)>(&self, f: F) -> Self::Handler<'b, T>;
 
     fn make_md_callback<'b>(&'a self, position: Range<usize>) 
         -> Self::Handler<'b, MouseEvent>
