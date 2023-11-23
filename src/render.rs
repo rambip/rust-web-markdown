@@ -1,12 +1,12 @@
 use core::ops::Range;
 
-use katex;
 use syntect::parsing::SyntaxSet;
 use syntect::highlighting::ThemeSet;
 
-use web_sys::MouseEvent;
-
 use pulldown_cmark_wikilink::{Event, Tag, TagEnd, CodeBlockKind, Alignment, MathMode};
+
+use katex;
+
 
 lazy_static::lazy_static!{
     static ref SYNTAX_SET: SyntaxSet = {
@@ -19,11 +19,10 @@ lazy_static::lazy_static!{
 
 use crate::utils::as_closing_tag;
 use super::{
-    WebFramework,
-    MarkdownMouseEvent,
+    Context,
     LinkDescription,
     MdComponentProps,
-    MarkdownProps, ElementAttributes
+    ElementAttributes
 };
 
 use super::HtmlElement::*;
@@ -57,6 +56,76 @@ fn highlight_code(theme_name: Option<&str>, content: &str, kind: &CodeBlockKind)
 }
 
 
+fn render_code_block<'a, F: Context<'a>>(
+    cx: &'a F,
+    string_content: Option<String>,
+    k: &CodeBlockKind,
+    range: Range<usize>
+    ) -> F::View {
+    let content = match string_content {
+        Some(x) => x,
+        None => return cx.el(Code, cx.el_empty())
+    };
+
+    let callback = cx.make_md_callback(range.clone());
+
+    let code_attributes = ElementAttributes{
+        on_click: Some(cx.make_md_callback(range)),
+        ..Default::default()
+    };
+
+    let pre_attributes = |c| ElementAttributes{
+        inner_html: Some(c),
+        ..Default::default()
+    };
+
+    match highlight_code(cx.props().theme, &content, &k) {
+        None => cx.el_with_attributes(
+            Code,
+            cx.el_with_attributes(Pre, cx.el_empty(), pre_attributes(content)),
+            code_attributes
+        ),
+        Some(x) => cx.el_with_attributes(
+            Span,
+            cx.el_empty(),
+            ElementAttributes{
+                on_click:Some(callback),
+                inner_html:Some(x),
+                ..Default::default()
+            }
+        )
+    }
+}
+
+/// `render_maths(content)` returns a html node
+/// with the latex content `content` compiled inside
+fn render_maths<'a, F: Context<'a>>(cx: &'a F, content: &str, display_mode: &MathMode, range: Range<usize>) 
+    -> Result<F::View, HtmlError>{
+    let opts = katex::Opts::builder()
+        .display_mode(*display_mode == MathMode::Display)
+        .build()
+        .unwrap();
+
+    let class_name = match display_mode {
+        MathMode::Inline => "math-inline",
+        MathMode::Display => "math-flow",
+    };
+
+    let callback = cx.make_md_callback(range);
+
+    match katex::render_with_opts(content, opts){
+        Ok(x) => Ok(cx.el_with_attributes(
+                Span,
+                cx.el_empty(),
+                ElementAttributes{
+                    classes: vec![class_name.to_string()],
+                    on_click: Some(callback),
+                    inner_html: Some(x),
+                    ..Default::default()
+                })),
+        Err(_) => HtmlError::err("invalid math")
+    }
+}
 
 
 /// `align_string(align)` gives the css string
@@ -68,157 +137,6 @@ fn align_string(align: Alignment) -> String {
         Alignment::Center => "text-align: center",
         Alignment::None => "",
     }.to_string()
-}
-
-impl<'a, 'callback, F: WebFramework<'callback>> MarkdownProps<'a, 'callback, F> 
-{
-    fn make_callback(self, position: Range<usize>) 
-        -> F::Callback<MouseEvent, ()>
-    {
-        let callback = self.on_click.cloned();
-        let f = move |x| {
-            let click_event = MarkdownMouseEvent {
-                mouse_event: x,
-                position: position.clone()
-            };
-            match &callback {
-                Some(cb) => F::call_callback(&cb, click_event),
-                _ => ()
-            }
-        };
-        F::make_callback(f)
-    }
-
-    fn render_tasklist_marker(self, cx: F, m: bool, position: Range<usize>) 
-        -> F::View {
-        let callback = self.on_click.cloned();
-        let callback = move |e: MouseEvent| {
-            e.prevent_default();
-            e.stop_propagation();
-            let click_event = MarkdownMouseEvent {
-                mouse_event: e,
-                position: position.clone()
-            };
-            if let Some(cb) = callback.clone() {
-                F::call_callback(&cb, click_event)
-            }
-        };
-
-        let attributes = ElementAttributes {
-            on_click: Some(F::make_callback(callback)),
-            ..Default::default()
-        };
-        cx.el_input_checkbox(m, attributes)
-    }
-
-    fn render_rule(self, cx: F, range: Range<usize>) -> F::View {
-        let attributes = ElementAttributes{
-            on_click: Some(self.make_callback(range)),
-            ..Default::default()
-        };
-        cx.el_hr(attributes)
-    }
-
-
-    fn render_code(self, cx: F, s: &str, range: Range<usize>) -> F::View {
-        let callback = self.make_callback(range.clone());
-        let attributes = ElementAttributes{
-            on_click: Some(callback),
-            ..Default::default()
-        };
-        cx.el_with_attributes(Code, cx.el_text(s), attributes)
-    }
-
-    fn render_code_block(
-        self,
-        cx: F,
-        string_content: Option<String>,
-        k: &CodeBlockKind,
-        range: Range<usize>
-        ) -> F::View {
-        let content = match string_content {
-            Some(x) => x,
-            None => return cx.el(Code, cx.el_empty())
-        };
-
-        let callback = self.make_callback(range.clone());
-
-        let code_attributes = ElementAttributes{
-            on_click: Some(self.make_callback(range)),
-            ..Default::default()
-        };
-
-        let pre_attributes = |c| ElementAttributes{
-            inner_html: Some(c),
-            ..Default::default()
-        };
-
-        match highlight_code(self.theme, &content, &k) {
-            None => cx.el_with_attributes(
-                Code,
-                cx.el_with_attributes(Pre, cx.el_empty(), pre_attributes(content)),
-                code_attributes
-            ),
-            Some(x) => cx.el_with_attributes(
-                Span,
-                cx.el_empty(),
-                ElementAttributes{
-                    on_click:Some(callback),
-                    inner_html:Some(x),
-                    ..Default::default()
-                }
-            )
-        }
-    }
-
-    fn render_text(self, cx: F, s: &str, range: Range<usize>) -> F::View{
-        let callback = self.make_callback(range);
-        let attributes = ElementAttributes{
-            on_click: Some(callback),
-            ..Default::default()
-        };
-        cx.el_with_attributes(Span, cx.el_text(s), attributes)
-    }
-
-    /// `render_maths(content)` returns a html node
-    /// with the latex content `content` compiled inside
-    fn render_maths(self, cx: F, content: &str, display_mode: &MathMode, range: Range<usize>) 
-        -> Result<F::View, HtmlError>{
-        let opts = katex::Opts::builder()
-            .display_mode(*display_mode == MathMode::Display)
-            .build()
-            .unwrap();
-
-        let class_name = match display_mode {
-            MathMode::Inline => "math-inline",
-            MathMode::Display => "math-flow",
-        };
-
-        let callback = self.make_callback(range);
-
-        match katex::render_with_opts(content, opts){
-            Ok(x) => Ok(cx.el_with_attributes(
-                    Span,
-                    cx.el_empty(),
-                    ElementAttributes{
-                        classes: vec![class_name.to_string()],
-                        on_click: Some(callback),
-                        inner_html: Some(x),
-                        ..Default::default()
-                    })),
-            Err(_) => HtmlError::err("invalid math")
-        }
-    }
-
-    fn render_link(self, cx: F, link: LinkDescription<'callback, F>) 
-        -> Result<F::View, HtmlError> 
-    {
-        match (&self.render_links, link.image) {
-            (Some(f), _) => Ok(F::call_html_callback(&f, link)),
-            (None, false) => Ok(cx.el_a(link.content, &link.url)),
-            (None, true) => Ok(cx.el_img(&link.url, &link.title)),
-        }
-    }
 }
 
 
@@ -242,13 +160,11 @@ impl ToString for HtmlError {
 
 
 
-pub struct Renderer<'a, 'callback, 'c, I, F>
+pub struct Renderer<'a, 'c, I, F>
 where I: Iterator<Item=(Event<'a>, Range<usize>)>,
-      F: WebFramework<'callback>,
+      F: Context<'a>,
 {
-    cx: F,
-
-    props: MarkdownProps<'a, 'callback, F>,
+    cx: &'a F,
     stream: &'c mut I,
     // TODO: Vec<Alignment> to &[Alignment] to avoid cloning.
     // But it requires to provide the right lifetime
@@ -266,9 +182,9 @@ fn is_probably_custom_component(raw_html: &str) -> bool {
         == 2
 }
 
-impl<'a, 'callback, 'c, I, F> Iterator for Renderer<'a, 'callback, 'c, I, F> 
+impl<'a, 'c, I, F> Iterator for Renderer<'a, 'c, I, F> 
 where I: Iterator<Item=(Event<'a>, Range<usize>)>,
-      F: WebFramework<'callback>
+      F: Context<'a>,
 {
     type Item = F::View;
 
@@ -277,8 +193,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
         let (item, range) = self.stream.next()? ;
         let range = range.clone();
 
-        let cx = self.cx.clone();
-        let props = self.props;
+        let cx = self.cx;
 
         let rendered = match item {
             Start(t) => self.render_tag(t, range),
@@ -291,16 +206,16 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
                     None => panic!("didn't expect a closing tag")
                 }
             },
-            Text(s) => Ok(props.render_text(cx, &s, range)),
-            Code(s) => Ok(props.render_code(cx, &s, range)),
+            Text(s) => Ok(cx.render_text(&s, range)),
+            Code(s) => Ok(cx.render_code(&s, range)),
             InlineHtml(s) => self.html(&s, range)?, // FIXME: custom component logic ?
             Html(s) => self.html(&s, range)?,
             FootnoteReference(_) => HtmlError::err("do not support footnote refs yet"),
             SoftBreak => Ok(self.next()?),
             HardBreak => Ok(self.cx.el_br()),
-            Rule => Ok(props.render_rule(cx, range)),
-            TaskListMarker(m) => Ok(props.render_tasklist_marker(cx, m, range)),
-            Math(disp, content) => props.render_maths(cx, &content, &disp, range),
+            Rule => Ok(cx.render_rule(range)),
+            TaskListMarker(m) => Ok(cx.render_tasklist_marker(m, range)),
+            Math(disp, content) => render_maths(self.cx, &content, &disp, range),
         };
 
         Some(
@@ -323,16 +238,15 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
 }
 
 
-impl<'a, 'callback, 'c, I, F> Renderer<'a, 'callback, 'c, I, F> 
+impl<'a, 'c, I, F> Renderer<'a, 'c, I, F> 
 where I: Iterator<Item=(Event<'a>, Range<usize>)>,
-      F: WebFramework<'callback>,
+      F: Context<'a>,
 {
-    pub fn new(cx: F, props: MarkdownProps<'a, 'callback, F>, events: &'c mut I)-> Self 
+    pub fn new(cx: &'a F, events: &'c mut I)-> Self 
     {
 
         Self {
             cx,
-            props,
             stream: events,
             column_alignment: None,
             cell_index: 0,
@@ -348,7 +262,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
                     Some(self.custom_component(s))
                 },
                 (None, _) => {
-                    let callback = self.props.make_callback(range);
+                    let callback = self.cx.make_md_callback(range);
                     Some(Ok(self.cx.el_with_attributes(
                                 Span,
                                 self.cx.el_empty(),
@@ -390,13 +304,12 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
     fn custom_component(&mut self, raw_html: &str) -> Result<F::View, HtmlError> {
         let description: ComponentCall = raw_html.parse().map_err(|x| HtmlError(x))?;
         let name: &str = &description.name;
-        let comp = self.props.components.get(name)
+        let comp = self.cx.props().components.get(name)
             .ok_or(HtmlError(format!("{} is not a valid component", description.name)))?;
 
         if description.children {
             let sub_renderer = Renderer {
-                cx: self.cx.clone(),
-                props: self.props,
+                cx: self.cx,
                 stream: self.stream,
                 column_alignment: self.column_alignment.clone(),
                 cell_index: 0,
@@ -405,14 +318,14 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
             };
             let children = self.cx.el_fragment(sub_renderer.collect());
             Ok(
-                F::call_html_callback(comp, MdComponentProps{
+                self.cx.call_html_callback(comp, MdComponentProps{
                 attributes: description.attributes,
                 children
             }))
         }
         else {
             Ok(
-                F::call_html_callback(comp, MdComponentProps{
+                self.cx.call_html_callback(comp, MdComponentProps{
                     attributes: description.attributes, 
                     children: self.cx.el_empty()
                 })
@@ -422,8 +335,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
 
     fn children(&mut self, tag: Tag<'a>) -> F::View {
         let sub_renderer = Renderer {
-            cx: self.cx.clone(),
-            props: self.props,
+            cx: self.cx,
             stream: self.stream,
             column_alignment: self.column_alignment.clone(),
             cell_index: 0,
@@ -462,8 +374,8 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
     fn render_tag(&mut self, tag: Tag<'a>, range: Range<usize>) 
     -> Result<F::View, HtmlError> 
     {
-        let cx = self.cx.clone();
-        let props = self.props;
+        let cx = self.cx;
+        let props = self.cx.props();
         Ok(match tag.clone() {
             Tag::HtmlBlock => {
                 let maybe_node = self.children_html(tag).map(
@@ -480,7 +392,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
             Tag::Heading{level, ..} => cx.el(Heading(level as u8), self.children(tag)),
             Tag::BlockQuote => cx.el(BlockQuote, self.children(tag)),
             Tag::CodeBlock(k) => 
-                props.render_code_block(cx, self.children_text(tag), &k, range),
+                render_code_block(cx, self.children_text(tag), &k, range),
             Tag::List(Some(n0)) => cx.el(Ol(n0 as i32), self.children(tag)),
             Tag::List(None) => cx.el(Ul, self.children(tag)),
             Tag::Item => cx.el(Li, self.children(tag)),
@@ -498,7 +410,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
                           style:Some(align_string(align)),
                           ..Default::default()}
                 )
-            }
+            },
             Tag::Emphasis => cx.el(Italics, self.children(tag)),
             Tag::Strong => cx.el(Bold, self.children(tag)),
             Tag::Strikethrough => cx.el(StrikeThrough, self.children(tag)),
@@ -510,7 +422,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
                     link_type,
                     image: true,
                 };
-                props.render_link(cx, description)?
+                cx.render_link(description)
             },
             Tag::Link{link_type, dest_url, title, ..} => {
                 let description = LinkDescription {
@@ -520,7 +432,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
                     link_type,
                     image: false,
                 };
-                props.render_link(cx, description)?
+                cx.render_link(description)
             },
             Tag::FootnoteDefinition(_) => return HtmlError::err("footnote not implemented"),
             Tag::MetadataBlock{..} => {
@@ -531,7 +443,8 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
                 };
                 cx.el_empty()
             }
-        })
+        }
+        )
     }
 }
 
