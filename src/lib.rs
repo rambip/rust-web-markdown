@@ -51,7 +51,7 @@ pub enum HtmlElement {
     Code
 }
 
-pub trait Context<'callback>: Clone 
+pub trait Context<'callback>: Sized
 {
     type View: Clone + 'callback;
     type HtmlCallback<T: 'callback>: Clone + 'callback;
@@ -199,7 +199,6 @@ pub struct MdComponentProps<V> {
 }
 
 
-#[derive(Clone)]
 pub struct MarkdownProps<'a, 'callback, F: Context<'callback>>
 {
     pub on_click: Option<&'a F::Handler<MarkdownMouseEvent>>,
@@ -217,11 +216,7 @@ pub struct MarkdownProps<'a, 'callback, F: Context<'callback>>
     pub frontmatter: Option<&'a F::Setter<String>>,
 
     pub theme: Option<&'a str>,
-
 }
-
-impl<'a, 'callback, F: Context<'callback>> Copy for MarkdownProps<'a, 'callback, F> {}
-
 
 pub fn render_markdown<'a, 'callback, F: Context<'callback>>(
     cx: &'a F, 
