@@ -75,7 +75,7 @@ pub trait Context<'callback>: Clone
     fn el_text(&self, text: &str) -> Self::View;
     fn mount_dynamic_link(&self, rel: &str, href: &str, integrity: &str, crossorigin: &str);
     fn el_input_checkbox(&self, checked: bool, attributes: ElementAttributes<Self::Handler<MarkdownMouseEvent>>) -> Self::View;
-    fn call_handler<T>(&self, callback: &Self::Handler<MarkdownMouseEvent>, input: T);
+    fn call_handler<T>(&self, callback: &Self::Handler<T>, input: T);
     fn call_html_callback<T>(&self, callback: &Self::HtmlCallback<T>, input: T) -> Self::View;
     fn make_handler<T, F: Fn(T)>(&self, f: F) -> Self::Handler<MarkdownMouseEvent>;
 
