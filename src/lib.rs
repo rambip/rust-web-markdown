@@ -223,15 +223,14 @@ impl<'a, F: Context<'a>> Copy for MarkdownProps<'a, F> {}
 pub fn render_markdown<'a, F: Context<'a>>(
     cx: &'a F, 
     source: &'a str, 
-    props: MarkdownProps<'a, F>
     ) -> F::View {
 
     let parse_options_default = Options::all();
-    let options = props.parse_options.unwrap_or(&parse_options_default);
+    let options = cx.props().parse_options.unwrap_or(&parse_options_default);
     let mut stream: Vec<_>
-        = ParserOffsetIter::new_ext(source, *options, props.wikilinks).collect();
+        = ParserOffsetIter::new_ext(source, *options, cx.props().wikilinks).collect();
 
-    if props.hard_line_breaks {
+    if cx.props().hard_line_breaks {
         for (r, _) in &mut stream {
             if *r == Event::SoftBreak {
                 *r = Event::HardBreak
