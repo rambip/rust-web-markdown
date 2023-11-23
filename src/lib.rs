@@ -97,8 +97,7 @@ pub trait Context<'callback>: Clone
         self.make_handler(f)
     }
 
-    fn render_tasklist_marker(&'callback self, m: bool, position: Range<usize>) 
-        -> Self::View {
+    fn render_tasklist_marker(&self, m: bool, position: Range<usize>) -> Self::View {
         let callback = self.props().on_click.cloned();
         let callback = move |e: MouseEvent| {
             e.prevent_default();
@@ -228,7 +227,6 @@ pub fn render_markdown<'a, 'callback, F: Context<'callback>>(
     cx: &'a F, 
     source: &'a str, 
     ) -> F::View 
-where 'a: 'callback
 {
 
     let parse_options_default = Options::all();

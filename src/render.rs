@@ -1,5 +1,7 @@
 use core::ops::Range;
 
+use core::marker::PhantomData;
+
 use syntect::parsing::SyntaxSet;
 use syntect::highlighting::ThemeSet;
 
@@ -160,10 +162,11 @@ impl ToString for HtmlError {
 
 
 
-pub struct Renderer<'a, 'c, I, F>
+pub struct Renderer<'a, 'callback, 'c, I, F>
 where I: Iterator<Item=(Event<'a>, Range<usize>)>,
-      F: Context<'a>,
+      F: Context<'callback>,
 {
+    __marker : PhantomData<&'callback ()>,
     cx: &'a F,
     stream: &'c mut I,
     // TODO: Vec<Alignment> to &[Alignment] to avoid cloning.
@@ -182,9 +185,9 @@ fn is_probably_custom_component(raw_html: &str) -> bool {
         == 2
 }
 
-impl<'a, 'c, I, F> Iterator for Renderer<'a, 'c, I, F> 
+impl<'a, 'callback, 'c, I, F> Iterator for Renderer<'a, 'callback, 'c, I, F> 
 where I: Iterator<Item=(Event<'a>, Range<usize>)>,
-      F: Context<'a>,
+      F: Context<'callback>,
 {
     type Item = F::View;
 
@@ -238,14 +241,15 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
 }
 
 
-impl<'a, 'c, I, F> Renderer<'a, 'c, I, F> 
+impl<'a, 'callback, 'c, I, F> Renderer<'a, 'callback, 'c, I, F> 
 where I: Iterator<Item=(Event<'a>, Range<usize>)>,
-      F: Context<'a>,
+      F: Context<'callback>,
 {
     pub fn new(cx: &'a F, events: &'c mut I)-> Self 
     {
 
         Self {
+            __marker: PhantomData,
             cx,
             stream: events,
             column_alignment: None,
@@ -309,6 +313,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
 
         if description.children {
             let sub_renderer = Renderer {
+                __marker: PhantomData,
                 cx: self.cx,
                 stream: self.stream,
                 column_alignment: self.column_alignment.clone(),
@@ -335,6 +340,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
 
     fn children(&mut self, tag: Tag<'a>) -> F::View {
         let sub_renderer = Renderer {
+            __marker: PhantomData,
             cx: self.cx,
             stream: self.stream,
             column_alignment: self.column_alignment.clone(),
