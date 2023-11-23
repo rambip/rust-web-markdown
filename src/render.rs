@@ -58,7 +58,7 @@ fn highlight_code(theme_name: Option<&str>, content: &str, kind: &CodeBlockKind)
 }
 
 
-fn render_code_block<'a, 'callback, F: Context<'callback>>(
+fn render_code_block<'a, 'callback, F: Context<'a, 'callback>>(
     cx: &'a F,
     string_content: Option<String>,
     k: &CodeBlockKind,
@@ -101,7 +101,7 @@ fn render_code_block<'a, 'callback, F: Context<'callback>>(
 
 /// `render_maths(content)` returns a html node
 /// with the latex content `content` compiled inside
-fn render_maths<'a, 'callback, F: Context<'callback>>(cx: &'a F, content: &str, display_mode: &MathMode, range: Range<usize>) 
+fn render_maths<'a, 'callback, F: Context<'a, 'callback>>(cx: &'a F, content: &str, display_mode: &MathMode, range: Range<usize>) 
     -> Result<F::View, HtmlError>{
     let opts = katex::Opts::builder()
         .display_mode(*display_mode == MathMode::Display)
@@ -164,7 +164,8 @@ impl ToString for HtmlError {
 
 pub struct Renderer<'a, 'callback, 'c, I, F>
 where I: Iterator<Item=(Event<'a>, Range<usize>)>,
-      F: Context<'callback>,
+      'callback: 'a,
+      F: Context<'a, 'callback>,
 {
     __marker : PhantomData<&'callback ()>,
     cx: &'a F,
@@ -187,7 +188,8 @@ fn is_probably_custom_component(raw_html: &str) -> bool {
 
 impl<'a, 'callback, 'c, I, F> Iterator for Renderer<'a, 'callback, 'c, I, F> 
 where I: Iterator<Item=(Event<'a>, Range<usize>)>,
-      F: Context<'callback>,
+      'callback: 'a,
+      F: Context<'a, 'callback>,
 {
     type Item = F::View;
 
@@ -243,7 +245,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
 
 impl<'a, 'callback, 'c, I, F> Renderer<'a, 'callback, 'c, I, F> 
 where I: Iterator<Item=(Event<'a>, Range<usize>)>,
-      F: Context<'callback>,
+      F: Context<'a, 'callback>,
 {
     pub fn new(cx: &'a F, events: &'c mut I)-> Self 
     {
