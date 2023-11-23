@@ -84,7 +84,7 @@ fn render_code_block<'a, 'callback, F: Context<'callback>>(
     match highlight_code(cx.props().theme, &content, &k) {
         None => cx.el_with_attributes(
             Code,
-            cx.el_with_attributes(Pre, cx.el_empty(), pre_attributes(content)),
+            cx.el_with_attributes(Pre, cx.el_empty(), pre_attributes(&content)),
             code_attributes
         ),
         Some(x) => cx.el_with_attributes(
@@ -92,7 +92,7 @@ fn render_code_block<'a, 'callback, F: Context<'callback>>(
             cx.el_empty(),
             ElementAttributes{
                 on_click:Some(callback),
-                inner_html:Some(x),
+                inner_html:Some(&x),
                 ..Default::default()
             }
         )
@@ -120,9 +120,9 @@ fn render_maths<'a, 'callback, F: Context<'callback>>(cx: &'a F, content: &str, 
                 Span,
                 cx.el_empty(),
                 ElementAttributes{
-                    classes: vec![class_name.to_string()],
+                    classes: vec![class_name],
                     on_click: Some(callback),
-                    inner_html: Some(x),
+                    inner_html: Some(&x),
                     ..Default::default()
                 })),
         Err(_) => HtmlError::err("invalid math")
@@ -132,13 +132,13 @@ fn render_maths<'a, 'callback, F: Context<'callback>>(cx: &'a F, content: &str, 
 
 /// `align_string(align)` gives the css string
 /// that is used to align text according to `align`
-fn align_string(align: Alignment) -> String {
+fn align_string(align: Alignment) -> &'static str {
     match align {
         Alignment::Left => "text-align: left",
         Alignment::Right => "text-align: right",
         Alignment::Center => "text-align: center",
         Alignment::None => "",
-    }.to_string()
+    }
 }
 
 
@@ -229,7 +229,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
                         self.cx.el_br(),
                     ]),
                     ElementAttributes {
-                        classes: vec!["error".to_string()],
+                        classes: vec!["error"],
                         inner_html: None,
                         on_click: None,
                         ..Default::default()
@@ -271,7 +271,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
                                 Span,
                                 self.cx.el_empty(),
                                 ElementAttributes{
-                                    inner_html: Some(s.to_string()),
+                                    inner_html: Some(s),
                                     on_click: Some(callback),
                                     ..Default::default()
                                 }
@@ -295,7 +295,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
                                 Span,
                                 self.cx.el_empty(),
                                 ElementAttributes{
-                                    inner_html: Some(s.to_string()),
+                                    inner_html: Some(s),
                                     ..Default::default()
                                 }
                                 )
@@ -387,7 +387,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
                 let maybe_node = self.children_html(tag).map(
                     |c| cx.el_with_attributes(Div, cx.el_empty(),
                         ElementAttributes {
-                            inner_html: Some(c),
+                            inner_html: Some(&c),
                             ..Default::default()
                         }
                     )
