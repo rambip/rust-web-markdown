@@ -51,36 +51,36 @@ pub enum HtmlElement {
     Code
 }
 
-pub trait Context<'a, 'callback>: Sized
+pub trait Context<'a, 'callback>: Copy + 'a
 where 'callback: 'a
 {
     type View: Clone + 'callback;
     type HtmlCallback<T: 'callback>: Clone + 'callback;
     type Handler<T: 'callback>: Clone + 'callback;
     type Setter<T: 'static>: Clone;
-    fn props(&'a self) -> MarkdownProps<'a, 'callback, Self>;
-    fn set<T>(&self, setter: &Self::Setter<T>, value: T);
-    fn send_debug_info(&self, info: Vec<String>);
-    fn el_with_attributes(&'a self, e: HtmlElement, inside: Self::View, attributes: ElementAttributes<Self::Handler<MouseEvent>>) -> Self::View;
-    fn el(&'a self, e: HtmlElement, inside: Self::View) -> Self::View {
+    fn props(self) -> MarkdownProps<'a, 'callback, Self>;
+    fn set<T>(self, setter: &Self::Setter<T>, value: T);
+    fn send_debug_info(self, info: Vec<String>);
+    fn el_with_attributes(self, e: HtmlElement, inside: Self::View, attributes: ElementAttributes<Self::Handler<MouseEvent>>) -> Self::View;
+    fn el(self, e: HtmlElement, inside: Self::View) -> Self::View {
         self.el_with_attributes(e, inside, Default::default())
     }
-    fn el_hr(&'a self, attributes: ElementAttributes<Self::Handler<MouseEvent>>) -> Self::View;
-    fn el_br(&'a self)-> Self::View;
-    fn el_fragment(&'a self, children: Vec<Self::View>) -> Self::View;
-    fn el_a(&'a self, children: Self::View, href: &str) -> Self::View;
-    fn el_img(&'a self, src: &str, alt: &str) -> Self::View;
-    fn el_empty(&'a self) -> Self::View {
+    fn el_hr(self, attributes: ElementAttributes<Self::Handler<MouseEvent>>) -> Self::View;
+    fn el_br(self)-> Self::View;
+    fn el_fragment(self, children: Vec<Self::View>) -> Self::View;
+    fn el_a(self, children: Self::View, href: &str) -> Self::View;
+    fn el_img(self, src: &str, alt: &str) -> Self::View;
+    fn el_empty(self) -> Self::View {
         self.el_fragment(vec![])
     }
-    fn el_text(&'a self, text: &str) -> Self::View;
-    fn mount_dynamic_link(&'a self, rel: &str, href: &str, integrity: &str, crossorigin: &str);
-    fn el_input_checkbox(&'a self, checked: bool, attributes: ElementAttributes<Self::Handler<MouseEvent>>) -> Self::View;
+    fn el_text(self, text: &str) -> Self::View;
+    fn mount_dynamic_link(self, rel: &str, href: &str, integrity: &str, crossorigin: &str);
+    fn el_input_checkbox(self, checked: bool, attributes: ElementAttributes<Self::Handler<MouseEvent>>) -> Self::View;
     fn call_handler<T>(callback: &Self::Handler<T>, input: T);
     fn call_html_callback<T>(callback: &Self::HtmlCallback<T>, input: T) -> Self::View;
     fn make_handler<T: 'callback, F: Fn(T) + 'callback>(&self, f: F) -> Self::Handler<T>;
 
-    fn make_md_handler(&'a self, position: Range<usize>) 
+    fn make_md_handler(self, position: Range<usize>) 
         -> Self::Handler<MouseEvent>
     {
         let callback = self.props().on_click.cloned();
@@ -98,7 +98,7 @@ where 'callback: 'a
         self.make_handler(f)
     }
 
-    fn render_tasklist_marker(&'a self, m: bool, position: Range<usize>) -> Self::View {
+    fn render_tasklist_marker(self, m: bool, position: Range<usize>) -> Self::View {
         let callback = self.props().on_click.cloned();
         let callback = move |e: MouseEvent| {
             e.prevent_default();
@@ -119,7 +119,7 @@ where 'callback: 'a
         self.el_input_checkbox(m, attributes)
     }
 
-    fn render_rule(&'a self, range: Range<usize>) -> Self::View {
+    fn render_rule(self, range: Range<usize>) -> Self::View {
         let attributes = ElementAttributes{
             on_click: Some(self.make_md_handler(range)),
             ..Default::default()
@@ -128,7 +128,7 @@ where 'callback: 'a
     }
 
 
-    fn render_code(&'a self, s: &str, range: Range<usize>) -> Self::View {
+    fn render_code(self, s: &str, range: Range<usize>) -> Self::View {
         let callback = self.make_md_handler(range.clone());
         let attributes = ElementAttributes{
             on_click: Some(callback),
@@ -138,7 +138,7 @@ where 'callback: 'a
     }
 
 
-    fn render_text(&'a self, s: &str, range: Range<usize>) -> Self::View{
+    fn render_text(self, s: &str, range: Range<usize>) -> Self::View{
         let callback = self.make_md_handler(range);
         let attributes = ElementAttributes{
             on_click: Some(callback),
@@ -148,7 +148,7 @@ where 'callback: 'a
     }
 
 
-    fn render_link(&'a self, link: LinkDescription<Self::View>) 
+    fn render_link(self, link: LinkDescription<Self::View>) 
         -> Self::View 
     {
         match (&self.props().render_links, link.image) {
@@ -220,7 +220,7 @@ pub struct MarkdownProps<'a, 'callback, F: Context<'a, 'callback>>
 }
 
 pub fn render_markdown<'a, 'callback, F: Context<'a, 'callback>>(
-    cx: &'a F, 
+    cx: F, 
     source: &'a str, 
     ) -> F::View 
 {

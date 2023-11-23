@@ -59,7 +59,7 @@ fn highlight_code(theme_name: Option<&str>, content: &str, kind: &CodeBlockKind)
 
 
 fn render_code_block<'a, 'callback, F: Context<'a, 'callback>>(
-    cx: &'a F,
+    cx: F,
     string_content: Option<String>,
     k: &CodeBlockKind,
     range: Range<usize>
@@ -101,7 +101,7 @@ fn render_code_block<'a, 'callback, F: Context<'a, 'callback>>(
 
 /// `render_maths(content)` returns a html node
 /// with the latex content `content` compiled inside
-fn render_maths<'a, 'callback, F: Context<'a, 'callback>>(cx: &'a F, content: &str, display_mode: &MathMode, range: Range<usize>) 
+fn render_maths<'a, 'callback, F: Context<'a, 'callback>>(cx: F, content: &str, display_mode: &MathMode, range: Range<usize>) 
     -> Result<F::View, HtmlError>{
     let opts = katex::Opts::builder()
         .display_mode(*display_mode == MathMode::Display)
@@ -168,7 +168,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
       F: Context<'a, 'callback>,
 {
     __marker : PhantomData<&'callback ()>,
-    cx: &'a F,
+    cx: F,
     stream: &'c mut I,
     // TODO: Vec<Alignment> to &[Alignment] to avoid cloning.
     // But it requires to provide the right lifetime
@@ -247,7 +247,7 @@ impl<'a, 'callback, 'c, I, F> Renderer<'a, 'callback, 'c, I, F>
 where I: Iterator<Item=(Event<'a>, Range<usize>)>,
       F: Context<'a, 'callback>,
 {
-    pub fn new(cx: &'a F, events: &'c mut I)-> Self 
+    pub fn new(cx: F, events: &'c mut I)-> Self 
     {
 
         Self {
