@@ -13,14 +13,14 @@ mod utils;
 mod component;
 
 
-pub struct ElementAttributes<'a, H> {
-    pub classes: Vec<&'a str>,
-    pub style: Option<&'a str>,
-    pub inner_html: Option<&'a str>,
+pub struct ElementAttributes<H> {
+    pub classes: Vec<String>,
+    pub style: Option<String>,
+    pub inner_html: Option<String>,
     pub on_click: Option<H>
 }
 
-impl<'a, H> Default for ElementAttributes<'a, H> {
+impl<H> Default for ElementAttributes<H> {
     fn default() -> Self {
         Self {
             style: None,

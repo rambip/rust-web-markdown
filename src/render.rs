@@ -84,7 +84,7 @@ fn render_code_block<'a, 'callback, F: Context<'a, 'callback>>(
     match highlight_code(cx.props().theme, &content, &k) {
         None => cx.el_with_attributes(
             Code,
-            cx.el_with_attributes(Pre, cx.el_empty(), pre_attributes(&content)),
+            cx.el_with_attributes(Pre, cx.el_empty(), pre_attributes(content)),
             code_attributes
         ),
         Some(x) => cx.el_with_attributes(
@@ -92,7 +92,7 @@ fn render_code_block<'a, 'callback, F: Context<'a, 'callback>>(
             cx.el_empty(),
             ElementAttributes{
                 on_click:Some(callback),
-                inner_html:Some(&x),
+                inner_html:Some(x),
                 ..Default::default()
             }
         )
@@ -120,9 +120,9 @@ fn render_maths<'a, 'callback, F: Context<'a, 'callback>>(cx: F, content: &str, 
                 Span,
                 cx.el_empty(),
                 ElementAttributes{
-                    classes: vec![class_name],
+                    classes: vec![class_name.to_string()],
                     on_click: Some(callback),
-                    inner_html: Some(&x),
+                    inner_html: Some(x),
                     ..Default::default()
                 })),
         Err(_) => HtmlError::err("invalid math")
@@ -231,7 +231,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
                         self.cx.el_br(),
                     ]),
                     ElementAttributes {
-                        classes: vec!["error"],
+                        classes: vec!["error".to_string()],
                         inner_html: None,
                         on_click: None,
                         ..Default::default()
@@ -273,7 +273,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
                                 Span,
                                 self.cx.el_empty(),
                                 ElementAttributes{
-                                    inner_html: Some(s),
+                                    inner_html: Some(s.to_string()),
                                     on_click: Some(callback),
                                     ..Default::default()
                                 }
@@ -297,7 +297,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
                                 Span,
                                 self.cx.el_empty(),
                                 ElementAttributes{
-                                    inner_html: Some(s),
+                                    inner_html: Some(s.to_string()),
                                     ..Default::default()
                                 }
                                 )
@@ -389,7 +389,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
                 let maybe_node = self.children_html(tag).map(
                     |c| cx.el_with_attributes(Div, cx.el_empty(),
                         ElementAttributes {
-                            inner_html: Some(&c),
+                            inner_html: Some(c),
                             ..Default::default()
                         }
                     )
@@ -415,7 +415,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
                 self.cell_index += 1;
                 cx.el_with_attributes(Tcell, self.children(tag), 
                       ElementAttributes{
-                          style:Some(align_string(align)),
+                          style:Some(align_string(align).to_string()),
                           ..Default::default()}
                 )
             },
