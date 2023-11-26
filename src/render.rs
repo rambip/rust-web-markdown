@@ -195,7 +195,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
 
     fn next(&mut self) -> Option<Self::Item> {
         use Event::*;
-        let (item, range) = self.stream.next()? ;
+        let (item, range): (Event<'a>, Range<usize>) = self.stream.next()? ;
         let range = range.clone();
 
         let cx = self.cx;

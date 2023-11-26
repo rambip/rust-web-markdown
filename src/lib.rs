@@ -68,12 +68,12 @@ where 'callback: 'a
     fn el_hr(self, attributes: ElementAttributes<Self::Handler<MouseEvent>>) -> Self::View;
     fn el_br(self)-> Self::View;
     fn el_fragment(self, children: Vec<Self::View>) -> Self::View;
-    fn el_a(self, children: Self::View, href: &str) -> Self::View;
-    fn el_img(self, src: &str, alt: &str) -> Self::View;
+    fn el_a(self, children: Self::View, href: String) -> Self::View;
+    fn el_img(self, src: String, alt: String) -> Self::View;
     fn el_empty(self) -> Self::View {
         self.el_fragment(vec![])
     }
-    fn el_text(self, text: &str) -> Self::View;
+    fn el_text(self, text: &'a str) -> Self::View;
     fn mount_dynamic_link(self, rel: &str, href: &str, integrity: &str, crossorigin: &str);
     fn el_input_checkbox(self, checked: bool, attributes: ElementAttributes<Self::Handler<MouseEvent>>) -> Self::View;
     fn call_handler<T>(callback: &Self::Handler<T>, input: T);
@@ -128,7 +128,7 @@ where 'callback: 'a
     }
 
 
-    fn render_code(self, s: &str, range: Range<usize>) -> Self::View {
+    fn render_code(self, s: &'a str, range: Range<usize>) -> Self::View {
         let callback = self.make_md_handler(range.clone());
         let attributes = ElementAttributes{
             on_click: Some(callback),
@@ -138,7 +138,7 @@ where 'callback: 'a
     }
 
 
-    fn render_text(self, s: &str, range: Range<usize>) -> Self::View{
+    fn render_text(self, s: &'a str, range: Range<usize>) -> Self::View{
         let callback = self.make_md_handler(range);
         let attributes = ElementAttributes{
             on_click: Some(callback),
@@ -153,8 +153,8 @@ where 'callback: 'a
     {
         match (&self.props().render_links, link.image) {
             (Some(f), _) => Self::call_html_callback(&f, link),
-            (None, false) => self.el_a(link.content, &link.url),
-            (None, true) => self.el_img(&link.url, &link.title),
+            (None, false) => self.el_a(link.content, link.url),
+            (None, true) => self.el_img(link.url, link.title),
         }
     }
 }
