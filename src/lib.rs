@@ -1,5 +1,5 @@
-use pulldown_cmark_wikilink::{ParserOffsetIter, LinkType, Event, CowStr};
-pub use pulldown_cmark_wikilink::Options;
+use pulldown_cmark_wikilink::{ParserOffsetIter, LinkType, Event};
+pub use pulldown_cmark_wikilink::{Options, CowStr};
 pub use web_sys::MouseEvent;
 
 use core::ops::Range;
