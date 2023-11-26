@@ -211,8 +211,8 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
                     None => panic!("didn't expect a closing tag")
                 }
             },
-            Text(s) => Ok(cx.render_text(&s, range)),
-            Code(s) => Ok(cx.render_code(&s, range)),
+            Text(s) => Ok(cx.render_text(s, range)),
+            Code(s) => Ok(cx.render_code(s, range)),
             InlineHtml(s) => self.html(&s, range)?, // FIXME: custom component logic ?
             Html(s) => self.html(&s, range)?,
             FootnoteReference(_) => HtmlError::err("do not support footnote refs yet"),
@@ -227,7 +227,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
             rendered.unwrap_or_else(|e| self.cx.el_with_attributes(
                     Span,
                     self.cx.el_fragment(vec![
-                        self.cx.el_text(&e.0),
+                        self.cx.el_text(e.0.into()),
                         self.cx.el_br(),
                     ]),
                     ElementAttributes {

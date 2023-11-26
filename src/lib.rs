@@ -1,4 +1,4 @@
-use pulldown_cmark_wikilink::{ParserOffsetIter, LinkType, Event};
+use pulldown_cmark_wikilink::{ParserOffsetIter, LinkType, Event, CowStr};
 pub use pulldown_cmark_wikilink::Options;
 pub use web_sys::MouseEvent;
 
@@ -73,7 +73,7 @@ where 'callback: 'a
     fn el_empty(self) -> Self::View {
         self.el_fragment(vec![])
     }
-    fn el_text(self, text: &'a str) -> Self::View;
+    fn el_text(self, text: CowStr<'a>) -> Self::View;
     fn mount_dynamic_link(self, rel: &str, href: &str, integrity: &str, crossorigin: &str);
     fn el_input_checkbox(self, checked: bool, attributes: ElementAttributes<Self::Handler<MouseEvent>>) -> Self::View;
     fn call_handler<T>(callback: &Self::Handler<T>, input: T);
@@ -128,7 +128,7 @@ where 'callback: 'a
     }
 
 
-    fn render_code(self, s: &'a str, range: Range<usize>) -> Self::View {
+    fn render_code(self, s: CowStr<'a>, range: Range<usize>) -> Self::View {
         let callback = self.make_md_handler(range.clone());
         let attributes = ElementAttributes{
             on_click: Some(callback),
@@ -138,7 +138,7 @@ where 'callback: 'a
     }
 
 
-    fn render_text(self, s: &'a str, range: Range<usize>) -> Self::View{
+    fn render_text(self, s: CowStr<'a>, range: Range<usize>) -> Self::View{
         let callback = self.make_md_handler(range);
         let attributes = ElementAttributes{
             on_click: Some(callback),
