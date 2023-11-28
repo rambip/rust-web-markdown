@@ -56,7 +56,7 @@ where 'callback: 'a
 {
     type View: Clone + 'callback;
     type HtmlCallback<T: 'callback>: Clone + 'callback;
-    type Handler<T: 'callback>: Clone + 'callback;
+    type Handler<T: 'callback>: 'callback;
     type Setter<T: 'static>: Clone;
     fn props(self) -> MarkdownProps<'a, 'callback, Self>;
     fn set<T>(self, setter: &Self::Setter<T>, value: T);
