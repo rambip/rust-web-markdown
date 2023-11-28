@@ -69,10 +69,10 @@ fn render_code_block<'a, 'callback, F: Context<'a, 'callback>>(
         None => return cx.el(Code, cx.el_empty())
     };
 
-    let callback = cx.make_md_handler(range.clone());
+    let callback = cx.make_md_handler(range.clone(), true);
 
     let code_attributes = ElementAttributes{
-        on_click: Some(cx.make_md_handler(range)),
+        on_click: Some(cx.make_md_handler(range, true)),
         ..Default::default()
     };
 
@@ -113,7 +113,7 @@ fn render_maths<'a, 'callback, F: Context<'a, 'callback>>(cx: F, content: &str, 
         MathMode::Display => "math-flow",
     };
 
-    let callback = cx.make_md_handler(range);
+    let callback = cx.make_md_handler(range, true);
 
     match katex::render_with_opts(content, opts){
         Ok(x) => Ok(cx.el_with_attributes(
@@ -268,7 +268,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
                     Some(self.custom_component(s))
                 },
                 (None, _) => {
-                    let callback = self.cx.make_md_handler(range);
+                    let callback = self.cx.make_md_handler(range, true);
                     Some(Ok(self.cx.el_with_attributes(
                                 Span,
                                 self.cx.el_empty(),

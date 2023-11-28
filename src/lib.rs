@@ -80,40 +80,10 @@ where 'callback: 'a
     fn call_html_callback<T>(callback: &Self::HtmlCallback<T>, input: T) -> Self::View;
     fn make_handler<T: 'callback, F: Fn(T) + 'callback>(self, f: F) -> Self::Handler<T>;
 
-    fn make_md_handler(self, position: Range<usize>) 
-        -> Self::Handler<MouseEvent>
-    {
-        let callback = self.props().on_click.cloned();
-
-        let f = move |x| {
-            let click_event = MarkdownMouseEvent {
-                mouse_event: x,
-                position: position.clone()
-            };
-            match &callback {
-                Some(cb) => Self::call_handler(cb, click_event),
-                _ => ()
-            }
-        };
-        self.make_handler(f)
-    }
-
+    fn make_md_handler(self, position: Range<usize>, stop_propagation: bool) -> Self::Handler<MouseEvent>;
     fn render_tasklist_marker(self, m: bool, position: Range<usize>) -> Self::View {
-        let callback = self.props().on_click.cloned();
-        let callback = move |e: MouseEvent| {
-            e.prevent_default();
-            e.stop_propagation();
-            let click_event = MarkdownMouseEvent {
-                mouse_event: e,
-                position: position.clone()
-            };
-            if let Some(cb) = callback.clone() {
-                Self::call_handler(&cb, click_event)
-            }
-        };
-
         let attributes = ElementAttributes {
-            on_click: Some(self.make_handler(callback)),
+            on_click: Some(self.make_md_handler(position, true)),
             ..Default::default()
         };
         self.el_input_checkbox(m, attributes)
@@ -121,7 +91,7 @@ where 'callback: 'a
 
     fn render_rule(self, range: Range<usize>) -> Self::View {
         let attributes = ElementAttributes{
-            on_click: Some(self.make_md_handler(range)),
+            on_click: Some(self.make_md_handler(range, false)),
             ..Default::default()
         };
         self.el_hr(attributes)
@@ -129,7 +99,7 @@ where 'callback: 'a
 
 
     fn render_code(self, s: CowStr<'a>, range: Range<usize>) -> Self::View {
-        let callback = self.make_md_handler(range.clone());
+        let callback = self.make_md_handler(range.clone(), false);
         let attributes = ElementAttributes{
             on_click: Some(callback),
             ..Default::default()
@@ -139,7 +109,7 @@ where 'callback: 'a
 
 
     fn render_text(self, s: CowStr<'a>, range: Range<usize>) -> Self::View{
-        let callback = self.make_md_handler(range);
+        let callback = self.make_md_handler(range, false);
         let attributes = ElementAttributes{
             on_click: Some(callback),
             ..Default::default()
@@ -158,19 +128,6 @@ where 'callback: 'a
         }
     }
 }
-
-#[derive(Clone, Debug)]
-pub struct MarkdownMouseEvent {
-    /// the original mouse event triggered when a text element was clicked on
-    pub mouse_event: MouseEvent,
-
-    /// the corresponding range in the markdown source, as a slice of [`u8`][u8]
-    pub position: Range<usize>,
-
-    // TODO: add a clonable tag for the type of the element
-    // pub tag: pulldown_cmark::Tag<'a>,
-}
-
 
 /// the description of a link, used to render it with a custom callback.
 /// See [pulldown_cmark::Tag::Link] for documentation
@@ -202,8 +159,6 @@ pub struct MdComponentProps<V> {
 
 pub struct MarkdownProps<'a, 'callback, F: Context<'a, 'callback>>
 {
-    pub on_click: Option<&'a F::Handler<MarkdownMouseEvent>>,
-
     pub render_links: Option<&'a F::HtmlCallback<LinkDescription<F::View>>>,
 
     pub hard_line_breaks: bool,
