@@ -80,7 +80,7 @@ fn render_code_block<'a, 'callback, F: Context<'a, 'callback>>(
             cx.el(Code, cx.el_text(content.into())),
             code_attributes
         ),
-        Some(x) => cx.el_span_with_inner_html(x, Default::default())
+        Some(x) => cx.el_span_with_inner_html(x, code_attributes)
     }
 }
 
