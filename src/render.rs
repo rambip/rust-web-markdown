@@ -69,33 +69,18 @@ fn render_code_block<'a, 'callback, F: Context<'a, 'callback>>(
         None => return cx.el(Code, cx.el_empty())
     };
 
-    let callback = cx.make_md_handler(range.clone(), true);
-
     let code_attributes = ElementAttributes{
         on_click: Some(cx.make_md_handler(range, true)),
-        ..Default::default()
-    };
-
-    let pre_attributes = |c| ElementAttributes{
-        inner_html: Some(c),
         ..Default::default()
     };
 
     match highlight_code(cx.props().theme, &content, &k) {
         None => cx.el_with_attributes(
             Code,
-            cx.el_with_attributes(Pre, cx.el_empty(), pre_attributes(content)),
+            cx.el(Code, cx.el_text(content.into())),
             code_attributes
         ),
-        Some(x) => cx.el_with_attributes(
-            Span,
-            cx.el_empty(),
-            ElementAttributes{
-                on_click:Some(callback),
-                inner_html:Some(x),
-                ..Default::default()
-            }
-        )
+        Some(x) => cx.el_span_with_inner_html(x, Default::default())
     }
 }
 
@@ -115,16 +100,14 @@ fn render_maths<'a, 'callback, F: Context<'a, 'callback>>(cx: F, content: &str, 
 
     let callback = cx.make_md_handler(range, true);
 
+    let attributes = ElementAttributes{
+            classes: vec![class_name.to_string()],
+            on_click: Some(callback),
+            ..Default::default()
+    };
+
     match katex::render_with_opts(content, opts){
-        Ok(x) => Ok(cx.el_with_attributes(
-                Span,
-                cx.el_empty(),
-                ElementAttributes{
-                    classes: vec![class_name.to_string()],
-                    on_click: Some(callback),
-                    inner_html: Some(x),
-                    ..Default::default()
-                })),
+        Ok(x) => Ok(cx.el_span_with_inner_html(x, attributes)),
         Err(_) => HtmlError::err("invalid math")
     }
 }
@@ -232,7 +215,6 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
                     ]),
                     ElementAttributes {
                         classes: vec!["error".to_string()],
-                        inner_html: None,
                         on_click: None,
                         ..Default::default()
                     }
@@ -269,11 +251,8 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
                 },
                 (None, _) => {
                     let callback = self.cx.make_md_handler(range, true);
-                    Some(Ok(self.cx.el_with_attributes(
-                                Span,
-                                self.cx.el_empty(),
+                    Some(Ok(self.cx.el_span_with_inner_html(s.to_string(),
                                 ElementAttributes{
-                                    inner_html: Some(s.to_string()),
                                     on_click: Some(callback),
                                     ..Default::default()
                                 }
@@ -293,15 +272,8 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
                 },
                 _ => {
                     // tries to render html as raw html anyway
-                    Some(Ok(self.cx.el_with_attributes(
-                                Span,
-                                self.cx.el_empty(),
-                                ElementAttributes{
-                                    inner_html: Some(s.to_string()),
-                                    ..Default::default()
-                                }
-                                )
-                           )
+                    Some(Ok(self.cx.el_span_with_inner_html(s.to_string(), 
+                                                            Default::default()))
                         )
                 },
             }
@@ -387,12 +359,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
         Ok(match tag.clone() {
             Tag::HtmlBlock => {
                 let maybe_node = self.children_html(tag).map(
-                    |c| cx.el_with_attributes(Div, cx.el_empty(),
-                        ElementAttributes {
-                            inner_html: Some(c),
-                            ..Default::default()
-                        }
-                    )
+                    |c| cx.el(Div, cx.el_span_with_inner_html(c, Default::default()))
                 );
                 cx.el_fragment(maybe_node.into_iter().collect())
             },

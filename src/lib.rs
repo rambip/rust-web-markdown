@@ -16,7 +16,6 @@ mod component;
 pub struct ElementAttributes<H> {
     pub classes: Vec<String>,
     pub style: Option<String>,
-    pub inner_html: Option<String>,
     pub on_click: Option<H>
 }
 
@@ -25,7 +24,6 @@ impl<H> Default for ElementAttributes<H> {
         Self {
             style: None,
             classes: vec![],
-            inner_html: None,
             on_click: None
         }
     }
@@ -65,6 +63,7 @@ where 'callback: 'a
     fn el(self, e: HtmlElement, inside: Self::View) -> Self::View {
         self.el_with_attributes(e, inside, Default::default())
     }
+    fn el_span_with_inner_html(self, inner_html: String, attributes: ElementAttributes<Self::Handler<MouseEvent>>) -> Self::View;
     fn el_hr(self, attributes: ElementAttributes<Self::Handler<MouseEvent>>) -> Self::View;
     fn el_br(self)-> Self::View;
     fn el_fragment(self, children: Vec<Self::View>) -> Self::View;
