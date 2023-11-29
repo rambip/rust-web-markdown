@@ -1,6 +1,5 @@
 use pulldown_cmark_wikilink::{ParserOffsetIter, LinkType, Event};
 pub use pulldown_cmark_wikilink::{Options, CowStr};
-pub use web_sys::MouseEvent;
 
 use core::ops::Range;
 use std::collections::HashMap;
@@ -55,16 +54,17 @@ where 'callback: 'a
     type View: Clone + 'callback;
     type HtmlCallback<T: 'callback>: Clone + 'callback;
     type Handler<T: 'callback>: 'callback;
+    type MouseEvent: 'static;
     type Setter<T: 'static>: Clone;
     fn props(self) -> MarkdownProps<'a, 'callback, Self>;
     fn set<T>(self, setter: &Self::Setter<T>, value: T);
     fn send_debug_info(self, info: Vec<String>);
-    fn el_with_attributes(self, e: HtmlElement, inside: Self::View, attributes: ElementAttributes<Self::Handler<MouseEvent>>) -> Self::View;
+    fn el_with_attributes(self, e: HtmlElement, inside: Self::View, attributes: ElementAttributes<Self::Handler<Self::MouseEvent>>) -> Self::View;
     fn el(self, e: HtmlElement, inside: Self::View) -> Self::View {
         self.el_with_attributes(e, inside, Default::default())
     }
-    fn el_span_with_inner_html(self, inner_html: String, attributes: ElementAttributes<Self::Handler<MouseEvent>>) -> Self::View;
-    fn el_hr(self, attributes: ElementAttributes<Self::Handler<MouseEvent>>) -> Self::View;
+    fn el_span_with_inner_html(self, inner_html: String, attributes: ElementAttributes<Self::Handler<Self::MouseEvent>>) -> Self::View;
+    fn el_hr(self, attributes: ElementAttributes<Self::Handler<Self::MouseEvent>>) -> Self::View;
     fn el_br(self)-> Self::View;
     fn el_fragment(self, children: Vec<Self::View>) -> Self::View;
     fn el_a(self, children: Self::View, href: String) -> Self::View;
@@ -74,12 +74,12 @@ where 'callback: 'a
     }
     fn el_text(self, text: CowStr<'a>) -> Self::View;
     fn mount_dynamic_link(self, rel: &str, href: &str, integrity: &str, crossorigin: &str);
-    fn el_input_checkbox(self, checked: bool, attributes: ElementAttributes<Self::Handler<MouseEvent>>) -> Self::View;
+    fn el_input_checkbox(self, checked: bool, attributes: ElementAttributes<Self::Handler<Self::MouseEvent>>) -> Self::View;
     fn call_handler<T>(callback: &Self::Handler<T>, input: T);
     fn call_html_callback<T>(callback: &Self::HtmlCallback<T>, input: T) -> Self::View;
     fn make_handler<T: 'callback, F: Fn(T) + 'callback>(self, f: F) -> Self::Handler<T>;
 
-    fn make_md_handler(self, position: Range<usize>, stop_propagation: bool) -> Self::Handler<MouseEvent>;
+    fn make_md_handler(self, position: Range<usize>, stop_propagation: bool) -> Self::Handler<Self::MouseEvent>;
     fn render_tasklist_marker(self, m: bool, position: Range<usize>) -> Self::View {
         let attributes = ElementAttributes {
             on_click: Some(self.make_md_handler(position, true)),
