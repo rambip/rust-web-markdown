@@ -187,6 +187,12 @@ pub fn render_markdown<'a, 'callback, F: Context<'a, 'callback>>(
     let mut stream: Vec<_>
         = ParserOffsetIter::new_ext(source, *options, cx.props().wikilinks).collect();
 
+    #[cfg(feature="debug")]
+    {
+        let debug_info : Vec<String> = stream.iter().map(|x| format!("{:?}", x)).collect();
+        cx.send_debug_info(debug_info)
+    }
+
     if cx.props().hard_line_breaks {
         for (r, _) in &mut stream {
             if *r == Event::SoftBreak {
