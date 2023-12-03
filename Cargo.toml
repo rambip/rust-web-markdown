@@ -12,3 +12,5 @@ syntect = { version = "5.0.0", default-features = false, features = ["default-fa
 katex = {version="0.4", default-features=false, features=["wasm-js"]}
 lazy_static = "1.4.0"
 
+[features]
+debug = []
