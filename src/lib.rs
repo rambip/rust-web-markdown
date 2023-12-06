@@ -57,10 +57,11 @@ where 'callback: 'a
     type MouseEvent: 'static;
     type Setter<T: 'static>: Clone;
     fn props(self) -> MarkdownProps<'a, 'callback, Self>;
-    fn set<T>(self, setter: &Self::Setter<T>, value: T);
+    fn set<T: PartialEq>(self, setter: &Self::Setter<T>, value: T);
 
     #[cfg(feature="debug")]
     fn send_debug_info(self, info: Vec<String>);
+
 
     fn el_with_attributes(self, e: HtmlElement, inside: Self::View, attributes: ElementAttributes<Self::Handler<Self::MouseEvent>>) -> Self::View;
     fn el(self, e: HtmlElement, inside: Self::View) -> Self::View {
