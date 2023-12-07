@@ -196,8 +196,14 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
             },
             Text(s) => Ok(cx.render_text(s, range)),
             Code(s) => Ok(cx.render_code(s, range)),
-            InlineHtml(s) => self.html(&s, range)?, // FIXME: custom component logic ?
-            Html(s) => self.html(&s, range)?,
+            InlineHtml(s) => {
+                let attributes = ElementAttributes {
+                    on_click: Some(self.cx.make_md_handler(range, false)),
+                    ..ElementAttributes::default()
+                };
+                Ok(self.cx.el_span_with_inner_html(s.to_string(), attributes))
+            },
+            Html(_) => panic!("html outside html block"), //self.html(&s, range)?,
             FootnoteReference(_) => HtmlError::err("do not support footnote refs yet"),
             SoftBreak => Ok(self.next()?),
             HardBreak => Ok(self.cx.el_br()),
@@ -338,7 +344,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
         text
     }
 
-    fn children_html(&mut self, tag: Tag<'a>) -> Option<String> {
+    fn children_html(&mut self) -> Option<String> {
         let text = match self.stream.next() {
             Some((Event::Html(s), _)) => Some(s.to_string()),
             None => None,
@@ -346,7 +352,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
         };
 
         let end_tag = &self.stream.next().expect("this event should be the closing tag").0;
-        assert!(end_tag == &Event::End(as_closing_tag(&tag)));
+        assert!(end_tag == &Event::End(TagEnd::HtmlBlock));
 
         text
     }
@@ -358,10 +364,12 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
         let props = self.cx.props();
         Ok(match tag.clone() {
             Tag::HtmlBlock => {
-                let maybe_node = self.children_html(tag).map(
-                    |c| cx.el(Div, cx.el_span_with_inner_html(c, Default::default()))
-                );
-                cx.el_fragment(maybe_node.into_iter().collect())
+                let raw_html = self.children_html().expect("empty html");
+                match self.html(&raw_html, range) {
+                    Some(Ok(x)) => x,
+                    Some(Err(err)) => return Err(err),
+                    None => cx.el_empty(),
+                }
             },
             Tag::Paragraph => cx.el(Paragraph, self.children(tag)),
             Tag::Heading{level, ..} => cx.el(Heading(level as u8), self.children(tag)),
