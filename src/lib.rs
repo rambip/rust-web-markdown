@@ -80,7 +80,7 @@ where 'callback: 'a
     fn mount_dynamic_link(self, rel: &str, href: &str, integrity: &str, crossorigin: &str);
     fn el_input_checkbox(self, checked: bool, attributes: ElementAttributes<Self::Handler<Self::MouseEvent>>) -> Self::View;
     fn call_handler<T>(callback: &Self::Handler<T>, input: T);
-    fn call_html_callback<T>(callback: &Self::HtmlCallback<T>, input: T) -> Self::View;
+    fn call_html_callback<T>(self, callback: &Self::HtmlCallback<T>, input: T) -> Self::View;
     fn make_handler<T: 'callback, F: Fn(T) + 'callback>(self, f: F) -> Self::Handler<T>;
 
     fn make_md_handler(self, position: Range<usize>, stop_propagation: bool) -> Self::Handler<Self::MouseEvent>;
@@ -125,7 +125,7 @@ where 'callback: 'a
         -> Self::View 
     {
         match (&self.props().render_links, link.image) {
-            (Some(f), _) => Self::call_html_callback(&f, link),
+            (Some(f), _) => Self::call_html_callback(self, &f, link),
             (None, false) => self.el_a(link.content, link.url),
             (None, true) => self.el_img(link.url, link.title),
         }

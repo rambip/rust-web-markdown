@@ -344,7 +344,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
         };
         let children = self.cx.el_fragment(sub_renderer.collect());
         Ok(
-            F::call_html_callback(comp, MdComponentProps{
+            F::call_html_callback(self.cx, comp, MdComponentProps{
             attributes: description.attributes,
             children
         }))
@@ -356,7 +356,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
         let comp = self.cx.props().components.get(name)
             .ok_or(HtmlError::component(name, "not a valid component"))?;
         Ok(
-            F::call_html_callback(comp, MdComponentProps{
+            F::call_html_callback(self.cx, comp, MdComponentProps{
                 attributes: description.attributes, 
                 children: self.cx.el_empty()
             })
