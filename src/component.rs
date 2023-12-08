@@ -1,11 +1,29 @@
 use std::str::FromStr;
 use core::iter::Peekable;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
+// TODO: rename
 pub struct ComponentCall {
-    pub name: String,
+    pub name: String, 
     pub attributes: Vec<(String, String)>,
-    pub children: bool,
+}
+
+// <a>
+// content
+// </a>
+//
+// probleme:
+// <a>
+//
+//  inside
+//
+// <b>
+
+#[derive(Debug, PartialEq)]
+pub enum Stuff {
+    Inline(ComponentCall),
+    Start(ComponentCall),
+    End(String),
 }
 
 // FIXME: better error handling
@@ -38,6 +56,7 @@ fn parse_attribute_name(stream: &mut Peekable<std::str::Chars>)
     while stream.peek() == Some(&' ') {
         stream.next();
     }
+
     loop {
         match stream.peek() {
             None => return Err("expected equal sign after attribute name".into()),
@@ -63,18 +82,25 @@ fn parse_attribute(stream: &mut Peekable<std::str::Chars>) ->
     Ok((name, attribute))
 }
 
-impl FromStr for ComponentCall {
-    // FIXME: ParseError
+impl FromStr for Stuff {
     type Err = String;
 
 
-    fn from_str(s: &str) -> Result<ComponentCall, Self::Err> {
+    fn from_str(s: &str) -> Result<Stuff, Self::Err> {
         let mut stream = s.chars()
             .peekable();
 
         if stream.next() != Some('<') {
             return Err("expected <".into())
         }
+
+        let is_end = if stream.peek() == Some(&'/') {
+            stream.next();
+            true
+        }
+        else {
+            false
+        };
 
         let mut name = String::new();
 
@@ -94,16 +120,73 @@ impl FromStr for ComponentCall {
             }
         }
 
+        if stream.peek() == Some(&'/') {
+            return Ok(Stuff::Inline(ComponentCall {
+                name,
+                attributes,
+            }))
+        }
+
         while stream.peek() == Some(&' ') {
             stream.next();
         }
 
-        let empty_tag = stream.next()==Some('/') && stream.next()==Some('>');
-        Ok(ComponentCall {
-            name,
-            attributes,
-            children: !empty_tag
-        })
+        if is_end {
+            Ok(Stuff::End(name))
+        }
+        else {
+            Ok(Stuff::Start(ComponentCall {
+                name,
+                attributes
+            }))
+        }
     }
 }
 
+#[cfg(test)]
+mod test {
+    use super::*;
+    use Stuff::*;
+
+    #[test]
+    fn parse_start(){
+        let c : Stuff = "<a>".parse().unwrap();
+        assert_eq!(c, Start(
+                ComponentCall {
+                    name: "a".into(),
+                    attributes: [].into(),
+                },
+                )
+        )
+    }
+
+    #[test]
+    fn parse_end(){
+        let c : Stuff = "</a>".parse().unwrap();
+        assert_eq!(c, End("a".into()))
+    }
+
+    #[test]
+    fn parse_inline_empty(){
+        let c : Stuff = "<a/>".parse().unwrap();
+        assert_eq!(c, Inline(
+                ComponentCall {
+                    name: "a".into(),
+                    attributes: [].into(),
+                },
+                )
+        )
+    }
+
+    #[test]
+    fn parse_inline(){
+        let c : Stuff = "<a key=\"val\"/>".parse().unwrap();
+        assert_eq!(c, Inline(
+                ComponentCall {
+                    name: "a".into(),
+                    attributes: vec![("key".into(), "val".into())]
+                },
+                )
+        )
+    }
+}

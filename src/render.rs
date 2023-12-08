@@ -9,16 +9,6 @@ use pulldown_cmark_wikilink::{Event, Tag, TagEnd, CodeBlockKind, Alignment, Math
 
 use katex;
 
-
-lazy_static::lazy_static!{
-    static ref SYNTAX_SET: SyntaxSet = {
-        SyntaxSet::load_defaults_newlines()
-    };
-    static ref THEME_SET: ThemeSet = {
-        ThemeSet::load_defaults()
-    };
-}
-
 use crate::utils::as_closing_tag;
 use super::{
     Context,
@@ -29,7 +19,56 @@ use super::{
 
 use super::HtmlElement::*;
 
-use crate::component::ComponentCall;
+use crate::component::{ComponentCall, Stuff};
+
+// load the default syntect options to highlight code
+lazy_static::lazy_static!{
+    static ref SYNTAX_SET: SyntaxSet = {
+        SyntaxSet::load_defaults_newlines()
+    };
+    static ref THEME_SET: ThemeSet = {
+        ThemeSet::load_defaults()
+    };
+}
+
+
+pub enum HtmlError {
+    NotImplemented(String),
+    Syntax(String),
+    CustomComponent{name: String, msg: String},
+    Math,
+}
+
+impl HtmlError {
+    fn not_implemented(message: impl ToString) -> Self{
+        HtmlError::NotImplemented(message.to_string())
+    }
+    fn syntax(message: impl ToString) -> Self{
+        HtmlError::Syntax(message.to_string())
+    }
+    fn component(name: impl ToString, msg: impl ToString) -> Self {
+        HtmlError::CustomComponent{
+            name: name.to_string(),
+            msg: msg.to_string(),
+        }
+    }
+}
+
+impl ToString for HtmlError {
+    fn to_string(&self) -> String {
+        match self {
+            HtmlError::Math => "invalid math".to_string(),
+            HtmlError::NotImplemented(s) => 
+                format!("`{s}`: not implemented"),
+            HtmlError::CustomComponent{name, msg} =>
+                format!("Custom component `{name}` failed: `{msg}`"),
+            HtmlError::Syntax(s) =>
+                format!("syntax error: {s}")
+        }
+    }
+}
+
+
 
 
 /// `highlight_code(content, ss, ts)` render the content `content`
@@ -57,27 +96,26 @@ fn highlight_code(theme_name: Option<&str>, content: &str, kind: &CodeBlockKind)
     )
 }
 
-
+/// renders a source code in a code block, with syntax highlighting if possible.
+/// `cx`: the current markdown context
+/// `source`: the source to render 
+/// `range`: the position of the code in the original source
 fn render_code_block<'a, 'callback, F: Context<'a, 'callback>>(
     cx: F,
-    string_content: Option<String>,
+    source: String,
     k: &CodeBlockKind,
     range: Range<usize>
     ) -> F::View {
-    let content = match string_content {
-        Some(x) => x,
-        None => return cx.el(Code, cx.el_empty())
-    };
 
     let code_attributes = ElementAttributes{
         on_click: Some(cx.make_md_handler(range, true)),
         ..Default::default()
     };
 
-    match highlight_code(cx.props().theme, &content, &k) {
+    match highlight_code(cx.props().theme, &source, &k) {
         None => cx.el_with_attributes(
             Code,
-            cx.el(Code, cx.el_text(content.into())),
+            cx.el(Code, cx.el_text(source.into())),
             code_attributes
         ),
         Some(x) => cx.el_span_with_inner_html(x, code_attributes)
@@ -108,7 +146,7 @@ fn render_maths<'a, 'callback, F: Context<'a, 'callback>>(cx: F, content: &str, 
 
     match katex::render_with_opts(content, opts){
         Ok(x) => Ok(cx.el_span_with_inner_html(x, attributes)),
-        Err(_) => HtmlError::err("invalid math")
+        Err(_) => Err(HtmlError::Math),
     }
 }
 
@@ -127,46 +165,40 @@ fn align_string(align: Alignment) -> &'static str {
 
 
 
-pub struct HtmlError(String);
-
-impl HtmlError {
-    fn err<T>(message: &str) -> Result<T, Self>{
-        Err(HtmlError(message.to_string()))
-    }
-}
-
-impl ToString for HtmlError {
-    fn to_string(&self) -> String {
-        self.0.to_owned()
-    }
-}
-
-
-
-
-
+/// Manage the creation of a [`F::View`]
+/// from a stream of markdown events
 pub struct Renderer<'a, 'callback, 'c, I, F>
 where I: Iterator<Item=(Event<'a>, Range<usize>)>,
       'callback: 'a,
       F: Context<'a, 'callback>,
 {
     __marker : PhantomData<&'callback ()>,
+    /// the markdown context
     cx: F,
+    /// the stream of markdown [`Event`]s
     stream: &'c mut I,
-    // TODO: Vec<Alignment> to &[Alignment] to avoid cloning.
-    // But it requires to provide the right lifetime
+    /// the alignment settings inside the current table
     column_alignment: Option<Vec<Alignment>>,
+    /// the current horizontal index of the cell we are in.
+    /// TODO: remove it
     cell_index: usize,
+    /// the root tag that this renderer is rendering
     end_tag: Option<TagEnd>,
+    /// the current component we are inside of.
+    /// custom components doesn't allow nesting.
     current_component: Option<String>
 }
 
-
-fn is_probably_custom_component(raw_html: &str) -> bool {
-    raw_html.chars()
-        .filter(|x| x==&'<' || x==&'>')
-        .count()
-        == 2
+/// returns true if `raw_html`:
+/// - starts with '<'
+/// - ends with '>'
+/// - does not have any '<' or '>' in between
+fn can_be_custom_component(raw_html: &str) -> bool {
+    let chars: Vec<_> = raw_html.trim().chars().collect();
+    let len = chars.len();
+    if len==0 {return false};
+    let (fst, middle, last) = (chars[0], &chars[1..len-1], chars[len-1]);
+    fst == '<' && last == '>' && middle.into_iter().all(|c| c!=&'<' && c!=&'>')
 }
 
 impl<'a, 'callback, 'c, I, F> Iterator for Renderer<'a, 'callback, 'c, I, F> 
@@ -203,8 +235,8 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
                 };
                 Ok(self.cx.el_span_with_inner_html(s.to_string(), attributes))
             },
-            Html(_) => panic!("html outside html block"), //self.html(&s, range)?,
-            FootnoteReference(_) => HtmlError::err("do not support footnote refs yet"),
+            Html(_) => panic!("html outside html block"), 
+            FootnoteReference(_) => Err(HtmlError::not_implemented("footnotes refs")),
             SoftBreak => Ok(self.next()?),
             HardBreak => Ok(self.cx.el_br()),
             Rule => Ok(cx.render_rule(range)),
@@ -216,7 +248,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
             rendered.unwrap_or_else(|e| self.cx.el_with_attributes(
                     Span,
                     self.cx.el_fragment(vec![
-                        self.cx.el_text(e.0.into()),
+                        self.cx.el_text(e.to_string().into()),
                         self.cx.el_br(),
                     ]),
                     ElementAttributes {
@@ -235,6 +267,8 @@ impl<'a, 'callback, 'c, I, F> Renderer<'a, 'callback, 'c, I, F>
 where I: Iterator<Item=(Event<'a>, Range<usize>)>,
       F: Context<'a, 'callback>,
 {
+    /// creates a new renderer from a stream of events.
+    /// It returns an iterator of [`F::View`]
     pub fn new(cx: F, events: &'c mut I)-> Self 
     {
 
@@ -249,75 +283,88 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
         }
     }
 
-    fn html(&mut self, s: &str, range: Range<usize>) 
-        -> Option<Result<F::View, HtmlError>> {
-            match (&self.current_component, self.end_tag) {
-                (None, None) if is_probably_custom_component(s) => {
-                    Some(self.custom_component(s))
-                },
-                (None, _) => {
-                    let callback = self.cx.make_md_handler(range, true);
-                    Some(Ok(self.cx.el_span_with_inner_html(s.to_string(),
-                                ElementAttributes{
-                                    on_click: Some(callback),
-                                    ..Default::default()
-                                }
-                                )
-                           )
-                        )
-                },
-                (Some(x), None) if s.trim()==format!("</{x}>") => {
-                    // legit end of custom component
-                    return None
-                },
-                (Some(x), None) if is_probably_custom_component(s) => {
-                    Some(HtmlError::err(&format!("the component `{x}` is not properly closed")))
-                },
-                (Some(x), Some(_)) if s.trim()==format!("</{x}>") => {
-                    Some(HtmlError::err(&format!("please make sure there is a newline before the end of your component")))
-                },
-                _ => {
-                    // tries to render html as raw html anyway
-                    Some(Ok(self.cx.el_span_with_inner_html(s.to_string(), 
-                                                            Default::default()))
-                        )
-                },
+    /// try to render `raw_html` as a custom component.
+    /// - if it looks like `<Component/>` and Component is registered,
+    ///     it will render the corresponding component
+    /// - it it looks like `<Component>`, and Component is registered, 
+    /// it will extract markdown until it finds `<Component/>`
+    /// In any other cases, it will render the strinng as raw html.
+    fn html(&mut self, raw_html: &str, _range: Range<usize>) 
+        -> Result<F::View, HtmlError> {
+
+            // TODO: refactor
+
+            match &self.current_component {
+                Some(current_name) => {
+                    if self.end_tag.is_some() {
+                        return Err(HtmlError::component(raw_html, 
+                                                        "please make sure there is a newline before the end of your component"))
+                    }
+                    match raw_html.parse() {
+                        Ok(Stuff::End(name)) if &name==current_name => {
+                            Ok(self.next().unwrap_or(self.cx.el_empty()))
+                        },
+                        Ok(_) => Err(HtmlError::component(current_name, 
+                                                          "expected end of component")),
+                        Err(e) => Err(HtmlError::syntax(e))
+                    }
+                }
+                None => {
+                    if can_be_custom_component(raw_html) {
+                        match raw_html.parse() {
+                            Ok(Stuff::Inline(s)) => self.custom_component_inline(s),
+                            Ok(Stuff::End(name)) => Err(
+                                HtmlError::component(name, "expected start, not end")),
+                            Ok(Stuff::Start(s)) => self.custom_component(s),
+                            Err(e) => Err(HtmlError::syntax(e))
+                        }
+                    }
+                    else {
+                        Ok(self.cx.el_span_with_inner_html(raw_html.to_string(), 
+                                                           Default::default()))
+                    }
+                }
             }
         }
 
-    fn custom_component(&mut self, raw_html: &str) -> Result<F::View, HtmlError> {
-        let description: ComponentCall = raw_html.parse().map_err(|x| HtmlError(x))?;
+    /// renders a custom component with childrens
+    fn custom_component(&mut self, description: ComponentCall) -> Result<F::View, HtmlError> {
         let name: &str = &description.name;
         let comp = self.cx.props().components.get(name)
-            .ok_or(HtmlError(format!("{} is not a valid component", description.name)))?;
+            .ok_or(HtmlError::component(name, "not a valid component"))?;
 
-        if description.children {
-            let sub_renderer = Renderer {
-                __marker: PhantomData,
-                cx: self.cx,
-                stream: self.stream,
-                column_alignment: self.column_alignment.clone(),
-                cell_index: 0,
-                end_tag: self.end_tag,
-                current_component: Some(description.name)
-            };
-            let children = self.cx.el_fragment(sub_renderer.collect());
-            Ok(
-                F::call_html_callback(comp, MdComponentProps{
-                attributes: description.attributes,
-                children
-            }))
-        }
-        else {
-            Ok(
-                F::call_html_callback(comp, MdComponentProps{
-                    attributes: description.attributes, 
-                    children: self.cx.el_empty()
-                })
-            )
-        }
+        let sub_renderer = Renderer {
+            __marker: PhantomData,
+            cx: self.cx,
+            stream: self.stream,
+            column_alignment: self.column_alignment.clone(),
+            cell_index: 0,
+            end_tag: self.end_tag,
+            current_component: Some(description.name)
+        };
+        let children = self.cx.el_fragment(sub_renderer.collect());
+        Ok(
+            F::call_html_callback(comp, MdComponentProps{
+            attributes: description.attributes,
+            children
+        }))
     }
 
+    /// renders a custom component without childrens
+    fn custom_component_inline(&mut self, description: ComponentCall) -> Result<F::View, HtmlError> {
+        let name: &str = &description.name;
+        let comp = self.cx.props().components.get(name)
+            .ok_or(HtmlError::component(name, "not a valid component"))?;
+        Ok(
+            F::call_html_callback(comp, MdComponentProps{
+                attributes: description.attributes, 
+                children: self.cx.el_empty()
+            })
+          )
+    }
+
+    /// renders events in a new renderer,
+    /// recursively, until the end of the tag
     fn children(&mut self, tag: Tag<'a>) -> F::View {
         let sub_renderer = Renderer {
             __marker: PhantomData,
@@ -331,6 +378,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
         self.cx.el_fragment(sub_renderer.collect())
     }
 
+    /// extract the text from the next text event
     fn children_text(&mut self, tag: Tag<'a>) -> Option<String> {
         let text = match self.stream.next() {
             Some((Event::Text(s), _)) => Some(s.to_string()),
@@ -338,23 +386,14 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
             _ => panic!("expected string event, got something else")
         };
 
-        let end_tag = &self.stream.next().expect("this event should be the closing tag").0;
-        assert!(end_tag == &Event::End(as_closing_tag(&tag)));
-
+        self.assert_closing_tag(as_closing_tag(&tag));
         text
     }
 
-    fn children_html(&mut self) -> Option<String> {
-        let text = match self.stream.next() {
-            Some((Event::Html(s), _)) => Some(s.to_string()),
-            None => None,
-            _ => panic!("expected html event, got something else")
-        };
-
+    // check that the closing tag is what was expected
+    fn assert_closing_tag(&mut self, end: TagEnd) {
         let end_tag = &self.stream.next().expect("this event should be the closing tag").0;
-        assert!(end_tag == &Event::End(TagEnd::HtmlBlock));
-
-        text
+        assert!(end_tag == &Event::End(end));
     }
 
     fn render_tag(&mut self, tag: Tag<'a>, range: Range<usize>) 
@@ -364,18 +403,19 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
         let props = self.cx.props();
         Ok(match tag.clone() {
             Tag::HtmlBlock => {
-                let raw_html = self.children_html().expect("empty html");
-                match self.html(&raw_html, range) {
-                    Some(Ok(x)) => x,
-                    Some(Err(err)) => return Err(err),
-                    None => cx.el_empty(),
-                }
+                let raw_html = match self.stream.next() {
+                    Some((Event::Html(s), _)) => s.to_string(),
+                    None => panic!("empty html"),
+                    _ => panic!("expected html event, got something else")
+                };
+                self.assert_closing_tag(TagEnd::HtmlBlock);
+                self.html(&raw_html, range)?
             },
             Tag::Paragraph => cx.el(Paragraph, self.children(tag)),
             Tag::Heading{level, ..} => cx.el(Heading(level as u8), self.children(tag)),
             Tag::BlockQuote => cx.el(BlockQuote, self.children(tag)),
             Tag::CodeBlock(k) => 
-                render_code_block(cx, self.children_text(tag), &k, range),
+                render_code_block(cx, self.children_text(tag).unwrap_or_default(), &k, range),
             Tag::List(Some(n0)) => cx.el(Ol(n0 as i32), self.children(tag)),
             Tag::List(None) => cx.el(Ul, self.children(tag)),
             Tag::Item => cx.el(Li, self.children(tag)),
@@ -417,7 +457,8 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
                 };
                 cx.render_link(description)
             },
-            Tag::FootnoteDefinition(_) => return HtmlError::err("footnote not implemented"),
+            Tag::FootnoteDefinition(_) => 
+                return Err(HtmlError::not_implemented("footnote not implemented")),
             Tag::MetadataBlock{..} => {
                 let c = self.children_text(tag);
                 match (&props.frontmatter, c){
