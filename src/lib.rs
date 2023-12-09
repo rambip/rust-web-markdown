@@ -209,7 +209,7 @@ pub struct MarkdownProps<'a, 'callback, F: Context<'a, 'callback>>
 
     pub parse_options: Option<&'a pulldown_cmark_wikilink::Options>,
 
-    pub components: &'a BTreeMap<String, F::HtmlCallback<MdComponentProps<F::View>>>,
+    pub components: &'a BTreeMap<&'static str, F::HtmlCallback<MdComponentProps<F::View>>>,
 
     pub frontmatter: Option<&'a F::Setter<String>>,
 
