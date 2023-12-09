@@ -4,6 +4,8 @@ pub use pulldown_cmark_wikilink::{Options, CowStr};
 use core::ops::Range;
 use std::collections::BTreeMap;
 
+use std::str::FromStr;
+
 mod render;
 use render::Renderer;
 
@@ -177,6 +179,22 @@ pub struct LinkDescription<V> {
 pub struct MdComponentProps<V> {
     pub attributes: BTreeMap<String, String>,
     pub children: V
+}
+
+// TODO: this error should be hidden from the user.
+pub enum MdComponentError<E> {
+    Parse(E),
+    UnknownAttribute,
+}
+
+impl<V> MdComponentProps<V> {
+    pub fn get_attribute<T: FromStr>(&self, name: &str) 
+        -> Result<T, MdComponentError<T::Err>> {
+        match self.attributes.get(name) {
+            Some(x) => x.parse().map_err(|x| MdComponentError::Parse(x)),
+            None => Err(MdComponentError::UnknownAttribute)
+        }
+    }
 }
 
 
