@@ -182,6 +182,7 @@ pub struct MdComponentProps<V> {
 }
 
 // TODO: this error should be hidden from the user.
+#[derive(Debug)]
 pub enum MdComponentError<E> {
     Parse(E),
     UnknownAttribute,
