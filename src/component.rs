@@ -1,32 +1,27 @@
 use std::str::FromStr;
 use core::iter::Peekable;
 
+use std::collections::BTreeMap;
+
 #[derive(Debug, PartialEq)]
-// TODO: rename
+/// a custom non-native html element
+/// called inside markdown
 pub struct ComponentCall {
     pub name: String, 
-    pub attributes: Vec<(String, String)>,
+    pub attributes: BTreeMap<String, String>,
 }
 
-// <a>
-// content
-// </a>
-//
-// probleme:
-// <a>
-//
-//  inside
-//
-// <b>
-
 #[derive(Debug, PartialEq)]
-pub enum Stuff {
+/// An html tag, used to create a custom component
+pub enum CustomHtmlTag {
+    /// <Component key="value"/>
     Inline(ComponentCall),
+    /// <Component>
     Start(ComponentCall),
+    /// </Component>
     End(String),
 }
 
-// FIXME: better error handling
 type ParseError = String;
 
 fn parse_attribute_value(stream: &mut Peekable<std::str::Chars>) 
@@ -82,11 +77,11 @@ fn parse_attribute(stream: &mut Peekable<std::str::Chars>) ->
     Ok((name, attribute))
 }
 
-impl FromStr for Stuff {
+impl FromStr for CustomHtmlTag {
     type Err = String;
 
 
-    fn from_str(s: &str) -> Result<Stuff, Self::Err> {
+    fn from_str(s: &str) -> Result<CustomHtmlTag, Self::Err> {
         let mut stream = s.chars()
             .peekable();
 
@@ -111,19 +106,22 @@ impl FromStr for Stuff {
             }
         }
 
-        let mut attributes = Vec::new();
+        let mut attributes = BTreeMap::new();
         loop {
             match stream.peek() {
                 None => return Err("expected end of tag".into()),
                 Some(&'>') | Some(&'/') => break,
-                _ => attributes.push(parse_attribute(&mut stream)?)
+                _ => {
+                    let (name, value) = parse_attribute(&mut stream)?;
+                    attributes.insert(name, value);
+                }
             }
         }
 
         if stream.peek() == Some(&'/') {
-            return Ok(Stuff::Inline(ComponentCall {
+            return Ok(CustomHtmlTag::Inline(ComponentCall {
                 name,
-                attributes,
+                attributes: attributes.into(),
             }))
         }
 
@@ -132,10 +130,10 @@ impl FromStr for Stuff {
         }
 
         if is_end {
-            Ok(Stuff::End(name))
+            Ok(CustomHtmlTag::End(name))
         }
         else {
-            Ok(Stuff::Start(ComponentCall {
+            Ok(CustomHtmlTag::Start(ComponentCall {
                 name,
                 attributes
             }))
@@ -146,11 +144,11 @@ impl FromStr for Stuff {
 #[cfg(test)]
 mod test {
     use super::*;
-    use Stuff::*;
+    use CustomHtmlTag::*;
 
     #[test]
     fn parse_start(){
-        let c : Stuff = "<a>".parse().unwrap();
+        let c : CustomHtmlTag = "<a>".parse().unwrap();
         assert_eq!(c, Start(
                 ComponentCall {
                     name: "a".into(),
@@ -162,13 +160,13 @@ mod test {
 
     #[test]
     fn parse_end(){
-        let c : Stuff = "</a>".parse().unwrap();
+        let c : CustomHtmlTag = "</a>".parse().unwrap();
         assert_eq!(c, End("a".into()))
     }
 
     #[test]
     fn parse_inline_empty(){
-        let c : Stuff = "<a/>".parse().unwrap();
+        let c : CustomHtmlTag = "<a/>".parse().unwrap();
         assert_eq!(c, Inline(
                 ComponentCall {
                     name: "a".into(),
@@ -180,11 +178,11 @@ mod test {
 
     #[test]
     fn parse_inline(){
-        let c : Stuff = "<a key=\"val\"/>".parse().unwrap();
+        let c : CustomHtmlTag = "<a key=\"val\"/>".parse().unwrap();
         assert_eq!(c, Inline(
                 ComponentCall {
                     name: "a".into(),
-                    attributes: vec![("key".into(), "val".into())]
+                    attributes: BTreeMap::from([("key".into(), "val".into())])
                 },
                 )
         )

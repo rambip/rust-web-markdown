@@ -19,7 +19,7 @@ use super::{
 
 use super::HtmlElement::*;
 
-use crate::component::{ComponentCall, Stuff};
+use crate::component::{ComponentCall, CustomHtmlTag};
 
 // load the default syntect options to highlight code
 lazy_static::lazy_static!{
@@ -301,7 +301,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
                                                         "please make sure there is a newline before the end of your component"))
                     }
                     match raw_html.parse() {
-                        Ok(Stuff::End(name)) if &name==current_name => {
+                        Ok(CustomHtmlTag::End(name)) if &name==current_name => {
                             Ok(self.next().unwrap_or(self.cx.el_empty()))
                         },
                         Ok(_) => Err(HtmlError::component(current_name, 
@@ -312,10 +312,10 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
                 None => {
                     if can_be_custom_component(raw_html) {
                         match raw_html.parse() {
-                            Ok(Stuff::Inline(s)) => self.custom_component_inline(s),
-                            Ok(Stuff::End(name)) => Err(
+                            Ok(CustomHtmlTag::Inline(s)) => self.custom_component_inline(s),
+                            Ok(CustomHtmlTag::End(name)) => Err(
                                 HtmlError::component(name, "expected start, not end")),
-                            Ok(Stuff::Start(s)) => self.custom_component(s),
+                            Ok(CustomHtmlTag::Start(s)) => self.custom_component(s),
                             Err(e) => Err(HtmlError::syntax(e))
                         }
                     }

@@ -2,7 +2,7 @@ use pulldown_cmark_wikilink::{ParserOffsetIter, LinkType, Event};
 pub use pulldown_cmark_wikilink::{Options, CowStr};
 
 use core::ops::Range;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 mod render;
 use render::Renderer;
@@ -154,8 +154,28 @@ pub struct LinkDescription<V> {
 
 
 #[derive(PartialEq)]
+/// the arguments given to a markdown component.
+/// `attributes`: a map of (attribute_name, attribute_value) pairs
+/// `children`: the interior markdown of the component
+///
+/// For example,
+/// ```md
+/// <MyBox color="blue" size="5">
+///
+/// **hey !**
+///
+/// </MyBox>
+/// ```
+///
+/// Will be translated to
+/// ```rust
+/// MdComponentProps {
+///     attributes: BTreeMap::from([("color", "blue"), ("size", "5")]),
+///     children: ... // html view of **hey**
+/// }
+/// ```
 pub struct MdComponentProps<V> {
-    pub attributes: Vec<(String, String)>,
+    pub attributes: BTreeMap<String, String>,
     pub children: V
 }
 
@@ -170,7 +190,7 @@ pub struct MarkdownProps<'a, 'callback, F: Context<'a, 'callback>>
 
     pub parse_options: Option<&'a pulldown_cmark_wikilink::Options>,
 
-    pub components: &'a HashMap<String, F::HtmlCallback<MdComponentProps<F::View>>>,
+    pub components: &'a BTreeMap<String, F::HtmlCallback<MdComponentProps<F::View>>>,
 
     pub frontmatter: Option<&'a F::Setter<String>>,
 
