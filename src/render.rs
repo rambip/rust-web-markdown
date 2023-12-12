@@ -14,7 +14,8 @@ use super::{
     Context,
     LinkDescription,
     MdComponentProps,
-    ElementAttributes
+    ElementAttributes,
+    HtmlError
 };
 
 use super::HtmlElement::*;
@@ -32,12 +33,6 @@ lazy_static::lazy_static!{
 }
 
 
-pub enum HtmlError {
-    NotImplemented(String),
-    Syntax(String),
-    CustomComponent{name: String, msg: String},
-    Math,
-}
 
 impl HtmlError {
     fn not_implemented(message: impl ToString) -> Self{
@@ -63,7 +58,9 @@ impl ToString for HtmlError {
             HtmlError::CustomComponent{name, msg} =>
                 format!("Custom component `{name}` failed: `{msg}`"),
             HtmlError::Syntax(s) =>
-                format!("syntax error: {s}")
+                format!("syntax error: {s}"),
+            HtmlError::Link(s) =>
+                format!("invalid link: {s}"),
         }
     }
 }
@@ -343,11 +340,13 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
             current_component: Some(description.name)
         };
         let children = self.cx.el_fragment(sub_renderer.collect());
-        Ok(
-            F::call_html_callback(self.cx, comp, MdComponentProps{
+
+        let props = MdComponentProps {
             attributes: description.attributes,
             children
-        }))
+        };
+
+        comp(self.cx, props)
     }
 
     /// renders a custom component without childrens
@@ -355,12 +354,13 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
         let name: &str = &description.name;
         let comp = self.cx.props().components.get(name)
             .ok_or(HtmlError::component(name, "not a valid component"))?;
-        Ok(
-            F::call_html_callback(self.cx, comp, MdComponentProps{
-                attributes: description.attributes, 
-                children: self.cx.el_empty()
-            })
-          )
+
+        let props = MdComponentProps {
+            attributes: description.attributes,
+            children: self.cx.el_empty()
+        };
+
+        comp(self.cx, props)
     }
 
     /// renders events in a new renderer,
@@ -445,7 +445,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
                     link_type,
                     image: true,
                 };
-                cx.render_link(description)
+                cx.render_link(description).map_err(HtmlError::Link)?
             },
             Tag::Link{link_type, dest_url, title, ..} => {
                 let description = LinkDescription {
@@ -455,16 +455,14 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
                     link_type,
                     image: false,
                 };
-                cx.render_link(description)
+                cx.render_link(description).map_err(HtmlError::Link)?
             },
             Tag::FootnoteDefinition(_) => 
                 return Err(HtmlError::not_implemented("footnote not implemented")),
             Tag::MetadataBlock{..} => {
-                let c = self.children_text(tag);
-                match (&props.frontmatter, c){
-                    (Some(setter), Some(text)) => cx.set(setter, text),
-                    _ => ()
-                };
+                if let Some(text) = self.children_text(tag) {
+                    cx.set_frontmatter(text)
+                }
                 cx.el_empty()
             }
         }
