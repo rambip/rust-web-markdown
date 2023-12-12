@@ -61,8 +61,8 @@ where 'callback: 'a
     /// present at the top of the markdown source
     fn set_frontmatter(self, frontmatter: String);
 
-    fn render_links(self, link: &LinkDescription<Self::View>) 
-        -> Option<Result<Self::View, String>>;
+    fn render_links(self, link: LinkDescription<Self::View>) 
+        -> Result<Self::View, String>;
 
     /// calls a callback with the given input
     fn call_handler<T>(callback: &Self::Handler<T>, input: T);
@@ -157,10 +157,18 @@ where 'callback: 'a
     fn render_link(self, link: LinkDescription<Self::View>) 
         -> Result<Self::View, String>
     {
-        match (self.render_links(&link), link.image) {
-            (Some(v), _) => v,
-            (None, false) => Ok(self.el_a(link.content, link.url)),
-            (None, true) => Ok(self.el_img(link.url, link.title)),
+        if self.props().custom_links {
+            self.render_links(link)
+        }
+        else {
+            Ok(
+                if link.image {
+                    self.el_a(link.content, link.url)
+                }
+                else {
+                    self.el_img(link.url, link.title)
+                }
+            )
         }
     }
 }
@@ -261,6 +269,8 @@ where F: Context<'a, 'callback>
 pub struct MarkdownProps<'a, 'callback, F: Context<'a, 'callback>>
 {
     pub hard_line_breaks: bool,
+
+    pub custom_links: bool,
 
     pub wikilinks: bool,
 
