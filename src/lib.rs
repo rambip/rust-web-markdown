@@ -52,7 +52,6 @@ pub trait Context<'a, 'callback>: Copy + 'a
 where 'callback: 'a
 {
     type View: Clone + 'callback;
-    type HtmlCallback<T: 'callback>: Clone + 'callback;
     type Handler<T: 'callback>: 'callback;
     type MouseEvent: 'static;
     /// get all the properties from the context

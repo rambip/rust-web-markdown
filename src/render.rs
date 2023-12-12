@@ -400,7 +400,6 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
     -> Result<F::View, HtmlError> 
     {
         let cx = self.cx;
-        let props = self.cx.props();
         Ok(match tag.clone() {
             Tag::HtmlBlock => {
                 let raw_html = match self.stream.next() {
