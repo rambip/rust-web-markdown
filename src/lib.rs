@@ -83,7 +83,6 @@ where 'callback: 'a
     fn el_input_checkbox(self, checked: bool, attributes: ElementAttributes<Self::Handler<Self::MouseEvent>>) -> Self::View;
     fn call_handler<T>(callback: &Self::Handler<T>, input: T);
     fn call_html_callback<T>(self, callback: &Self::HtmlCallback<T>, input: T) -> Self::View;
-    fn make_handler<T: 'callback, F: Fn(T) + 'callback>(self, f: F) -> Self::Handler<T>;
 
     fn make_md_handler(self, position: Range<usize>, stop_propagation: bool) -> Self::Handler<Self::MouseEvent>;
     fn render_tasklist_marker(self, m: bool, position: Range<usize>) -> Self::View {
