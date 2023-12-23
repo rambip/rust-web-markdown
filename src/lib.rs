@@ -239,6 +239,15 @@ impl<V> MdComponentProps<V> {
 }
 
 
+pub struct ComponentCreationError(String);
+
+impl<T: std::fmt::Debug> From<T> for ComponentCreationError {
+    fn from(value: T) -> Self {
+        Self(format!("{:?}", value))
+    }
+}
+
+
 // lifetime issue:
 // for dioxus, this function is not `'static`.
 //
@@ -252,13 +261,12 @@ impl<V> CustomComponents<V>
         Self(Default::default())
     }
 
-    pub fn register<ERR>(&mut self, name: &'static str, component: impl Fn(MdComponentProps<V>) -> Result<V, ERR> + 'static) 
-        where ERR: std::fmt::Debug
+    pub fn register(&mut self, name: &'static str, component: impl Fn(MdComponentProps<V>) -> Result<V, ComponentCreationError> + 'static) 
     {
         self.0.insert(name, Box::new(move |props| {
             component(props).map_err(|err| HtmlError::CustomComponent {
                 name: name.to_string(),
-                msg: format!("{err:?}"),
+                msg: err.0,
             })
         }));
     }
@@ -267,7 +275,7 @@ impl<V> CustomComponents<V>
         self.0.get(name)
     }
 }
-    
+
 
 pub struct MarkdownProps<'a, 'callback, F: Context<'a, 'callback>>
 {
