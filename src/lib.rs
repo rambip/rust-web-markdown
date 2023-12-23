@@ -243,6 +243,7 @@ impl<V> MdComponentProps<V> {
 // for dioxus, this function is not `'static`.
 //
 // And for yew, it needs to be
+#[derive(Default)]
 pub struct CustomComponents<V> (BTreeMap<&'static str, Box<dyn Fn(MdComponentProps<V>) -> Result<V, HtmlError>>>);
 
 impl<V> CustomComponents<V> 
