@@ -346,7 +346,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
             children
         };
 
-        comp(self.cx, props)
+        comp(props)
     }
 
     /// renders a custom component without childrens
@@ -360,7 +360,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
             children: self.cx.el_empty()
         };
 
-        comp(self.cx, props)
+        comp(props)
     }
 
     /// renders events in a new renderer,

@@ -239,28 +239,30 @@ impl<V> MdComponentProps<V> {
 }
 
 
-pub struct CustomComponents<'a, 'callback, F: Context<'a, 'callback>>
-    (BTreeMap<&'static str, Box<dyn Fn(F, MdComponentProps<F::View>) -> Result<F::View, HtmlError>>>);
+// lifetime issue:
+// for dioxus, this function is not `'static`.
+//
+// And for yew, it needs to be
+pub struct CustomComponents<V> (BTreeMap<&'static str, Box<dyn Fn(MdComponentProps<V>) -> Result<V, HtmlError>>>);
 
-impl<'a, 'callback, F> CustomComponents<'a, 'callback, F> 
-where F: Context<'a, 'callback>
+impl<V> CustomComponents<V> 
 {
     pub fn new() -> Self {
         Self(Default::default())
     }
 
-    pub fn register<ERR>(&mut self, name: &'static str, component: impl Fn(F, MdComponentProps<F::View>) -> Result<F::View, ERR> + 'static) 
+    pub fn register<ERR>(&mut self, name: &'static str, component: impl Fn(MdComponentProps<V>) -> Result<V, ERR> + 'static) 
         where ERR: std::fmt::Debug
     {
-        self.0.insert(name, Box::new(move |cx, props| {
-            component(cx, props).map_err(|err| HtmlError::CustomComponent {
+        self.0.insert(name, Box::new(move |props| {
+            component(props).map_err(|err| HtmlError::CustomComponent {
                 name: name.to_string(),
                 msg: format!("{err:?}"),
             })
         }));
     }
 
-    fn get(&self, name: &str) -> Option<&Box<dyn Fn(F, MdComponentProps<F::View>) -> Result<F::View, HtmlError>>> {
+    fn get(&self, name: &str) -> Option<&Box<dyn Fn(MdComponentProps<V>) -> Result<V, HtmlError>>> {
         self.0.get(name)
     }
 }
@@ -276,7 +278,7 @@ pub struct MarkdownProps<'a, 'callback, F: Context<'a, 'callback>>
 
     pub parse_options: Option<&'a pulldown_cmark_wikilink::Options>,
 
-    pub components: &'a CustomComponents<'a, 'callback, F>,
+    pub components: &'a CustomComponents<F::View>,
 
     pub theme: Option<&'a str>,
 }
