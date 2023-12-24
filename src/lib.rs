@@ -54,6 +54,11 @@ where 'callback: 'a
     type View: Clone + 'callback;
     type Handler<T: 'callback>: 'callback;
     type MouseEvent: 'static;
+    type Scope: 'a;
+
+    // experimental change to be more ergonomic for dioxus
+    fn scope(self) -> Self::Scope;
+
     /// get all the properties from the context
     fn props(self) -> MarkdownProps<'a, 'callback, Self>;
 
@@ -239,6 +244,9 @@ impl<V> MdComponentProps<V> {
 }
 
 
+/// error raised by the user of the library,
+/// when creating a component.
+/// It is automatically converted from any type of error
 pub struct ComponentCreationError(String);
 
 impl<T: std::fmt::Debug> From<T> for ComponentCreationError {
@@ -248,28 +256,41 @@ impl<T: std::fmt::Debug> From<T> for ComponentCreationError {
 }
 
 
-#[derive(Default)]
-pub struct CustomComponents<V> (BTreeMap<&'static str, Box<dyn Fn(MdComponentProps<V>) -> Result<V, HtmlError>>>);
+/// component store.
+/// It is called when therer is a `<CustomComponent>` inside the markdown source.
+/// It is basically a hashmap but more efficient for a small number of items
+pub struct CustomComponents<C, V> (BTreeMap<&'static str, 
+                                   Box<dyn Fn(C, MdComponentProps<V>) -> Result<V, HtmlError>>
+>);
 
-impl<'a, V> CustomComponents<V> 
+impl<C, V> Default for CustomComponents<C, V> {
+    fn default() -> Self {
+        Self (Default::default())
+    }
+}
+
+impl<C, V> CustomComponents<C, V> 
 {
     pub fn new() -> Self {
         Self(Default::default())
     }
 
-    pub fn register(&'a mut self, name: &'static str, component: impl Fn(MdComponentProps<V>) -> Result<V, ComponentCreationError> + 'static) 
-        where V: 'a
+    /// register a new component.
+    /// The function `component` takes a context and props of type `MdComponentProps`
+    /// and returns html
+    pub fn register<F>(&mut self, name: &'static str, component: F)
+        where F: Fn(C, MdComponentProps<V>) -> Result<V, ComponentCreationError> + 'static
     {
-        self.0.insert(name, Box::new(move |props| {
-            component(props).map_err(|err| HtmlError::CustomComponent {
+        self.0.insert(name, Box::new(move |cx, props| {
+            component(cx, props).map_err(|err| HtmlError::CustomComponent {
                 name: name.to_string(),
                 msg: err.0,
             })
         }));
     }
 
-    fn get(&'a self, name: &str) -> Option<&Box<dyn Fn(MdComponentProps<V>) -> Result<V, HtmlError>>> 
-        where V: 'a
+    fn get(&self, name: &str) -> 
+        Option<&Box<dyn Fn(C, MdComponentProps<V>) -> Result<V, HtmlError>>> 
     {
         self.0.get(name)
     }
@@ -286,7 +307,7 @@ pub struct MarkdownProps<'a, 'callback, F: Context<'a, 'callback>>
 
     pub parse_options: Option<&'a pulldown_cmark_wikilink::Options>,
 
-    pub components: &'a CustomComponents<F::View>,
+    pub components: &'a CustomComponents<F::Scope, F::View>,
 
     pub theme: Option<&'a str>,
 }

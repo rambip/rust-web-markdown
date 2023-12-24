@@ -249,7 +249,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
                         self.cx.el_br(),
                     ]),
                     ElementAttributes {
-                        classes: vec!["error".to_string()],
+                        classes: vec!["markdown-error".to_string()],
                         on_click: None,
                         ..Default::default()
                     }
@@ -346,7 +346,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
             children
         };
 
-        comp(props)
+        comp(self.cx.scope(), props)
     }
 
     /// renders a custom component without childrens
@@ -360,7 +360,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
             children: self.cx.el_empty()
         };
 
-        comp(props)
+        comp(self.cx.scope(), props)
     }
 
     /// renders events in a new renderer,
