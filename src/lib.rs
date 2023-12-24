@@ -248,20 +248,17 @@ impl<T: std::fmt::Debug> From<T> for ComponentCreationError {
 }
 
 
-// lifetime issue:
-// for dioxus, this function is not `'static`.
-//
-// And for yew, it needs to be
 #[derive(Default)]
 pub struct CustomComponents<V> (BTreeMap<&'static str, Box<dyn Fn(MdComponentProps<V>) -> Result<V, HtmlError>>>);
 
-impl<V> CustomComponents<V> 
+impl<'a, V> CustomComponents<V> 
 {
     pub fn new() -> Self {
         Self(Default::default())
     }
 
-    pub fn register(&mut self, name: &'static str, component: impl Fn(MdComponentProps<V>) -> Result<V, ComponentCreationError> + 'static) 
+    pub fn register(&'a mut self, name: &'static str, component: impl Fn(MdComponentProps<V>) -> Result<V, ComponentCreationError> + 'static) 
+        where V: 'a
     {
         self.0.insert(name, Box::new(move |props| {
             component(props).map_err(|err| HtmlError::CustomComponent {
@@ -271,7 +268,9 @@ impl<V> CustomComponents<V>
         }));
     }
 
-    fn get(&self, name: &str) -> Option<&Box<dyn Fn(MdComponentProps<V>) -> Result<V, HtmlError>>> {
+    fn get(&'a self, name: &str) -> Option<&Box<dyn Fn(MdComponentProps<V>) -> Result<V, HtmlError>>> 
+        where V: 'a
+    {
         self.0.get(name)
     }
 }
