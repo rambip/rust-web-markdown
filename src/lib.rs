@@ -158,10 +158,13 @@ where 'callback: 'a
     }
 
 
+    fn has_custom_links(self) -> bool;
+
+
     fn render_link(self, link: LinkDescription<Self::View>) 
         -> Result<Self::View, String>
     {
-        if self.props().custom_links {
+        if self.has_custom_links(){
             self.render_links(link)
         }
         else {
@@ -262,8 +265,6 @@ impl<T: std::fmt::Debug> From<T> for ComponentCreationError {
 pub struct MarkdownProps<'a>
 {
     pub hard_line_breaks: bool,
-
-    pub custom_links: bool,
 
     pub wikilinks: bool,
 
