@@ -327,8 +327,9 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
     /// renders a custom component with childrens
     fn custom_component(&mut self, description: ComponentCall) -> Result<F::View, HtmlError> {
         let name: &str = &description.name;
-        let comp = self.cx.props().components.get(name)
-            .ok_or(HtmlError::component(name, "not a valid component"))?;
+        if !self.cx.has_custom_component(name){
+            return Err(HtmlError::component(name, "not a valid component"))
+        }
 
         let sub_renderer = Renderer {
             __marker: PhantomData,
@@ -337,7 +338,7 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
             column_alignment: self.column_alignment.clone(),
             cell_index: 0,
             end_tag: self.end_tag,
-            current_component: Some(description.name)
+            current_component: Some(description.name.clone())
         };
         let children = self.cx.el_fragment(sub_renderer.collect());
 
@@ -346,21 +347,34 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
             children
         };
 
-        comp(self.cx.scope(), props)
+        match self.cx.render_custom_component(name, props) {
+            Ok(x) => Ok(x),
+            Err(e) => Err(HtmlError::CustomComponent {
+                name: name.to_string(),
+                msg: e.0
+            })
+        }
     }
 
     /// renders a custom component without childrens
     fn custom_component_inline(&mut self, description: ComponentCall) -> Result<F::View, HtmlError> {
         let name: &str = &description.name;
-        let comp = self.cx.props().components.get(name)
-            .ok_or(HtmlError::component(name, "not a valid component"))?;
+        if !self.cx.has_custom_component(name){
+            return Err(HtmlError::component(name, "not a valid component"))
+        }
 
         let props = MdComponentProps {
             attributes: description.attributes,
             children: self.cx.el_empty()
         };
 
-        comp(self.cx.scope(), props)
+        match self.cx.render_custom_component(name, props) {
+            Ok(x) => Ok(x),
+            Err(e) => Err(HtmlError::CustomComponent {
+                name: name.to_string(),
+                msg: e.0
+            })
+        }
     }
 
     /// renders events in a new renderer,

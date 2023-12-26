@@ -54,13 +54,9 @@ where 'callback: 'a
     type View: Clone + 'callback;
     type Handler<T: 'callback>: 'callback;
     type MouseEvent: 'static;
-    type Scope: 'a;
-
-    // experimental change to be more ergonomic for dioxus
-    fn scope(self) -> Self::Scope;
 
     /// get all the properties from the context
-    fn props(self) -> MarkdownProps<'a, 'callback, Self>;
+    fn props(self) -> MarkdownProps<'a>;
 
     /// write the frontmatter (or metadata) string 
     /// present at the top of the markdown source
@@ -122,6 +118,9 @@ where 'callback: 'a
     /// add a styleshit to the markdown component
     fn mount_dynamic_link(self, rel: &str, href: &str, integrity: &str, crossorigin: &str);
 
+    fn has_custom_component(self, name: &str) -> bool;
+    fn render_custom_component(self, name: &str, input: MdComponentProps<Self::View>) -> Result<Self::View, ComponentCreationError>;
+
     fn render_tasklist_marker(self, m: bool, position: Range<usize>) -> Self::View {
         let attributes = ElementAttributes {
             on_click: Some(self.make_md_handler(position, true)),
@@ -176,6 +175,8 @@ where 'callback: 'a
             )
         }
     }
+
+
 }
 
 /// the description of a link, used to render it with a custom callback.
@@ -256,48 +257,9 @@ impl<T: std::fmt::Debug> From<T> for ComponentCreationError {
 }
 
 
-/// component store.
-/// It is called when therer is a `<CustomComponent>` inside the markdown source.
-/// It is basically a hashmap but more efficient for a small number of items
-pub struct CustomComponents<C, V> (BTreeMap<&'static str, 
-                                   Box<dyn Fn(C, MdComponentProps<V>) -> Result<V, HtmlError>>
->);
-
-impl<C, V> Default for CustomComponents<C, V> {
-    fn default() -> Self {
-        Self (Default::default())
-    }
-}
-
-impl<C, V> CustomComponents<C, V> 
-{
-    pub fn new() -> Self {
-        Self(Default::default())
-    }
-
-    /// register a new component.
-    /// The function `component` takes a context and props of type `MdComponentProps`
-    /// and returns html
-    pub fn register<F>(&mut self, name: &'static str, component: F)
-        where F: Fn(C, MdComponentProps<V>) -> Result<V, ComponentCreationError> + 'static
-    {
-        self.0.insert(name, Box::new(move |cx, props| {
-            component(cx, props).map_err(|err| HtmlError::CustomComponent {
-                name: name.to_string(),
-                msg: err.0,
-            })
-        }));
-    }
-
-    fn get(&self, name: &str) -> 
-        Option<&Box<dyn Fn(C, MdComponentProps<V>) -> Result<V, HtmlError>>> 
-    {
-        self.0.get(name)
-    }
-}
 
 
-pub struct MarkdownProps<'a, 'callback, F: Context<'a, 'callback>>
+pub struct MarkdownProps<'a>
 {
     pub hard_line_breaks: bool,
 
@@ -306,8 +268,6 @@ pub struct MarkdownProps<'a, 'callback, F: Context<'a, 'callback>>
     pub wikilinks: bool,
 
     pub parse_options: Option<&'a pulldown_cmark_wikilink::Options>,
-
-    pub components: &'a CustomComponents<F::Scope, F::View>,
 
     pub theme: Option<&'a str>,
 }
