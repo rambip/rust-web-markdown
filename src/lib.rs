@@ -170,10 +170,10 @@ where 'callback: 'a
         else {
             Ok(
                 if link.image {
-                    self.el_a(link.content, link.url)
+                    self.el_img(link.url, link.title)
                 }
                 else {
-                    self.el_img(link.url, link.title)
+                    self.el_a(link.content, link.url)
                 }
             )
         }
