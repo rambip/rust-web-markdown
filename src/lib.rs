@@ -238,11 +238,38 @@ pub struct MdComponentProps<V> {
 }
 
 impl<V> MdComponentProps<V> {
-    pub fn get(&self, name: &str) 
-        -> Result<String, String> {
+    /// returns the attribute string corresponding to the key `name`.
+    /// returns None if the attribute was not provided
+    pub fn get(&self, name: &str) -> Option<String> {
+        self.attributes.get(name).cloned()
+    }
+
+    /// returns the attribute corresponding to the key `name`, once parsed.
+    /// If the attribute doesn't exist or if the parsing fail, returns an error.
+    pub fn get_parsed<T>(&self, name: &str) -> Result<T, String> 
+    where 
+        T: std::str::FromStr,
+        T::Err: core::fmt::Debug
+    {
         match self.attributes.get(name) {
-            Some(x) => Ok(x.clone()),
-            None => Err("unknown attribute".to_string())
+            Some(x) => x.clone().parse().map_err(|e| format!("{e:?}")),
+            None => Err(format!("please provide the attribute `{name}`"))
+        }
+    }
+
+    /// same thing as `get_parsed`, but if the attribute doesn't exist,
+    /// return None
+    pub fn get_parsed_optional<T>(&self, name: &str) -> Result<Option<T>, String>
+        where 
+            T: std::str::FromStr,
+            T::Err: core::fmt::Debug
+    {
+        match self.attributes.get(name) {
+            Some(x) => match x.parse() {
+                Ok(a) => Ok(Some(a)),
+                Err(e) => Err(format!("{e:?}"))
+            }
+            None => Ok(None)
         }
     }
 }
