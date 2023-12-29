@@ -9,7 +9,8 @@ edition = "2021"
 web-sys = { version = "0.3.61", features=["MouseEvent"]}
 pulldown-cmark-wikilink = { version="0.1.1", git="https://github.com/rambip/pulldown-cmark-wikilink" }
 syntect = { version = "5.0.0", default-features = false, features = ["default-fancy"]}
-katex = {version="0.4", default-features=false, features=["wasm-js"]}
+# katex = {version="0.4", default-features=false, features=["wasm-js"]}
+katex = {version="0.4"}
 lazy_static = "1.4.0"
 
 [features]
