@@ -5,8 +5,12 @@ use core::marker::PhantomData;
 use syntect::parsing::SyntaxSet;
 use syntect::highlighting::ThemeSet;
 
-use pulldown_cmark_wikilink::{Event, Tag, TagEnd, CodeBlockKind, Alignment, MathMode};
+use pulldown_cmark_wikilink::{Event, Tag, TagEnd, CodeBlockKind, Alignment};
 
+#[cfg(features="maths")]
+use pulldown_cmark_wikilink::MathMode;
+
+#[cfg(features="maths")]
 use katex;
 
 use crate::utils::as_closing_tag;
@@ -119,6 +123,7 @@ fn render_code_block<'a, 'callback, F: Context<'a, 'callback>>(
     }
 }
 
+#[cfg(features="maths")]
 /// `render_maths(content)` returns a html node
 /// with the latex content `content` compiled inside
 fn render_maths<'a, 'callback, F: Context<'a, 'callback>>(cx: F, content: &str, display_mode: &MathMode, range: Range<usize>) 
@@ -238,7 +243,10 @@ where I: Iterator<Item=(Event<'a>, Range<usize>)>,
             HardBreak => Ok(self.cx.el_br()),
             Rule => Ok(cx.render_rule(range)),
             TaskListMarker(m) => Ok(cx.render_tasklist_marker(m, range)),
+            #[cfg(features="maths")]
             Math(disp, content) => render_maths(self.cx, &content, &disp, range),
+            #[cfg(not(features="maths"))]
+            Math(_, _) => Err(HtmlError::Math)
         };
 
         Some(
