@@ -13,3 +13,4 @@ rust-web-markdown = { path = "../web-markdown/", default-features = false }
 
 [features]
 debug = ["rust-web-markdown/debug"]
+default = []

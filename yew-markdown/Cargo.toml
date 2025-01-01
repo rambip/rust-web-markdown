@@ -17,4 +17,6 @@ rust-web-markdown = { path = "../web-markdown/", default-features = false}
 web-sys = { version = "0.3", features = [] }
 
 [features]
+# TODO: This should not be needed to enable debug to work around build error from feature resolution issue
+default = ["debug"]
 debug = ["rust-web-markdown/debug"]
