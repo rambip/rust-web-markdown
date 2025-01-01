@@ -1,0 +1,15 @@
+[package]
+name = "dioxus-markdown"
+version = "0.1.2"
+edition = "2021"
+license = "MIT"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+dioxus = "0.4.0"
+dioxus-web = "0.4.0"
+rust-web-markdown = { path = "../web-markdown/", default-features = false }
+
+[features]
+debug = ["rust-web-markdown/debug"]

@@ -1,5 +1,12 @@
 [workspace]
 
-members = ["web-markdown"]
+members = [
+    "web-markdown",
+    "dioxus-markdown",
+    "leptos-markdown",
+    "yew-markdown",
+    "dioxus-markdown/examples/*",
+    "leptos-markdown/examples/*",
+    "yew-markdown/examples/*",
+]
 resolver = "2"
-
