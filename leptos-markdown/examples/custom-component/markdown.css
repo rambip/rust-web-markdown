@@ -1,0 +1,28 @@
+ blockquote {
+     margin: 5px; border-left: 5px solid grey;
+     padding: 5px;
+ }
+
+ blockquote p {
+     margin: 5px
+ }
+
+ ul {
+     list-style-type:disc
+ }
+
+ table {
+     border: 1px solid black; border-collapse: collapse
+ }
+
+ td {
+     border: 1px solid grey; padding: 5px
+ }
+
+ thead {
+     background-color: #eee; font-weight: bold;
+ }
+
+span.markdown-error {
+    background-color: red;
+}

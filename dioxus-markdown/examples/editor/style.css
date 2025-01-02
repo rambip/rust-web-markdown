@@ -1,0 +1,14 @@
+.container {
+    display: flex; 
+    align-items: top;
+}
+
+.md-view {
+    border: 1px solid black; 
+    margin: 10px; 
+    width: 50%
+}
+
+.debug-view {
+    margin: 40px;
+}

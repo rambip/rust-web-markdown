@@ -1,0 +1,15 @@
+[package]
+name = "yew-editor"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+yew = { version = "0.21", features = ["csr"] }
+yew-markdown = { path = "../.." }
+wasm-bindgen = "0.2"
+web-sys = { version = "0.3", features = ["HtmlTextAreaElement"] }
+
+wasm-logger = "0.2"
+log = "0.4"
