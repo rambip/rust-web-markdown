@@ -23,7 +23,7 @@ jobs:
 
       - name: Build example 🎁
         shell: bash
-        run: "cd yew-markdown && trunk build --release --public-url /${{ github.event.repository.name }} examples/${{ matrix.example }}"
+        run: "cd yew-markdown && trunk build --release --public-url /${{ github.event.repository.name }} examples/${{ matrix.example }}/index.html"
 
       - name: upload result
         uses: actions/upload-artifact@v4
