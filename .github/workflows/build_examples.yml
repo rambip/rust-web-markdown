@@ -28,7 +28,7 @@ jobs:
       - name: upload result
         uses: actions/upload-artifact@v4
         with:
-          name: dist-${{ matrix.example }}
+          name: ${{ matrix.example }}
           path: "yew-markdown/examples/${{ matrix.example }}/dist"
           retention-days: 1
 
@@ -50,7 +50,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: combined-dist
-          merge-multiple: true
+          merge-multiple: false
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
