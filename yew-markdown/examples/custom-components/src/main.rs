@@ -1,6 +1,5 @@
 use yew::prelude::*;
-use yew_markdown::{Markdown, CustomComponents};
-
+use yew_markdown::{CustomComponents, Markdown};
 
 static MARKDOWN_SOURCE: &str = r#"
 ## Here are a few counters:
@@ -20,7 +19,7 @@ static MARKDOWN_SOURCE: &str = r#"
 
 #[derive(PartialEq, Properties)]
 struct CounterProps {
-    initial: Option<i32>
+    initial: Option<i32>,
 }
 
 #[function_component]
@@ -29,14 +28,14 @@ fn Counter(props: &CounterProps) -> Html {
 
     let increment = {
         let count = count.clone();
-        Callback::from(move |_| count.set(*count + 1))
+        Callback::from(move |_| count.set(*count - 1))
     };
     let decrement = {
         let count = count.clone();
         Callback::from(move |_| count.set(*count + 1))
     };
 
-    html!{
+    html! {
         <div>
             <button onclick={decrement}>{"-"}</button>
             {*count}
@@ -50,10 +49,9 @@ struct BoxProps {
     children: Children,
 }
 
-
 #[function_component]
 fn BlueBox(props: &BoxProps) -> Html {
-    html!{
+    html! {
         <div style="border: 2px solid blue">
             {props.children.clone()}
         </div>
@@ -63,17 +61,14 @@ fn BlueBox(props: &BoxProps) -> Html {
 #[function_component(App)]
 fn app() -> Html {
     let mut components = CustomComponents::new();
-    components.register("Counter", 
-            |p| Ok(html!{
-                <Counter initial={p.get_parsed_optional("initial")?} />}
-    ));
+    components.register("Counter", |p| {
+        Ok(html! {
+        <Counter initial={p.get_parsed_optional("initial")?} />})
+    });
 
-    components.register("box", 
-            |p| Ok(html!{<BlueBox>{p.children}</BlueBox>}
-    ));
+    components.register("box", |p| Ok(html! {<BlueBox>{p.children}</BlueBox>}));
 
-
-    html!{
+    html! {
         <div>
             <h1>{"The source"}</h1>
             <Markdown src={format!("```md\n{MARKDOWN_SOURCE}\n")}/>
@@ -83,7 +78,6 @@ fn app() -> Html {
         </div>
     }
 }
-
 
 fn main() {
     wasm_logger::init(wasm_logger::Config::default());
