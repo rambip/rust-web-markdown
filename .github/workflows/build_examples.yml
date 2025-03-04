@@ -7,7 +7,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        example: ["custom-components", "editor", "onclick", "performance", "showcase"]
+        example:
+          ["custom-components", "editor", "onclick", "performance", "showcase"]
     steps:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1.0.6
@@ -23,7 +24,7 @@ jobs:
 
       - name: Build example 🎁
         shell: bash
-        run: "cd yew-markdown/examples/${{matrix.example}} && trunk build --release --public-url /${{ github.event.repository.name }}"
+        run: "cd yew-markdown/examples/${{matrix.example}} && trunk build --release --public-url /${{ github.event.repository.name }}/${{matrix.example}}"
 
       - name: upload result
         uses: actions/upload-artifact@v4
@@ -37,11 +38,12 @@ jobs:
     needs: trunk-build
     # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
     permissions:
-      pages: write      # to deploy to Pages
-      id-token: write   # to verify the deployment originates from an appropriate source
+      pages: write # to deploy to Pages
+      id-token: write # to verify the deployment originates from an appropriate source
 
     environment:
-      name: github-pages
+      name:
+        github-pages
         # don't forget to go to the settings/environment and to allow main to push !
       url: ${{ steps.deployment.outputs.page_url }}
 
