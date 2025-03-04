@@ -24,7 +24,7 @@ the example is included in `./examples/showcase`
 Here is an illustration:
 ![](./img/showcase.jpg)
 
-see [here](https://rambip.github.io/yew-markdown/showcase)
+see [here](https://rambip.github.io/rust-web-markdown/showcase)
 
 ## Editor
 Of course, an example of a basic markdown editor is implemented to show what is currently supported
