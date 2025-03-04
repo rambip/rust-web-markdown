@@ -1,39 +1,38 @@
 use leptos::*;
-use leptos_markdown::{Markdown, debug::EventInfo};
+use leptos_markdown::{debug::EventInfo, Markdown};
 
 #[component]
 fn RenderZone(
-              content: ReadSignal<String>,
-              wikilinks_enabled: ReadSignal<bool>, 
-              hard_breaks_enabled: ReadSignal<bool>,
-              debug_mode: ReadSignal<bool>) -> impl IntoView {
-
-
+    content: ReadSignal<String>,
+    wikilinks_enabled: ReadSignal<bool>,
+    hard_breaks_enabled: ReadSignal<bool>,
+    debug_mode: ReadSignal<bool>,
+) -> impl IntoView {
     let (debug_info, set_debug_info) = create_signal(Vec::new());
     provide_context(EventInfo(set_debug_info));
 
     let debug_info_view = move || {
-        debug_info()
+        debug_info
+            .get()
             .iter()
-            .map(|x| view!{<li>{x}</li>})
+            .map(|x| view! {<li>{x}</li>})
             .collect_view()
     };
 
-    view!{
+    view! {
         <div style="border: 1px solid black; margin: 10px; width: 50%">
-            <Markdown src=content 
+            <Markdown src=content
                   wikilinks=wikilinks_enabled
                   hard_line_breaks=hard_breaks_enabled
             />
         </div>
-        {move || debug_mode().then_some(
+        {move || debug_mode.get().then_some(
             view!{
                 <ul>{debug_info_view()}</ul>
             })
         }
     }
 }
-
 
 #[component]
 fn App() -> impl IntoView {
@@ -42,12 +41,12 @@ fn App() -> impl IntoView {
     let (hard_breaks_enabled, set_hard_breaks) = create_signal(false);
     let (debug_mode, set_debug_mode) = create_signal(false);
 
-    view!{
+    view! {
         <h1>Markdown editor</h1>
         <div style={"display: flex; align-items: top;"}>
             <div style="width:40%">
                 <textarea type="text"
-                    on:input = move |ev| set_content(event_target_value(&ev))
+                    on:input = move |ev| set_content.set(event_target_value(&ev))
                     prop:value = content
                     rows={30}
                     style="margin: 10px; width: 80%"
@@ -55,19 +54,19 @@ fn App() -> impl IntoView {
                 <div>
                     <label for="wiki">enable wikilinks: </label>
                     <input type="checkbox" id="wiki"
-                        on:input=move |e| set_wikilinks(event_target_checked(&e))
+                        on:input=move |e| set_wikilinks.set(event_target_checked(&e))
                     />
                 </div>
                 <div>
                     <label for="hardbreaks">convert soft breaks to hard breaks</label>
                     <input type="checkbox" id="hardbreaks"
-                        on:input=move |e| set_hard_breaks(event_target_checked(&e))
+                        on:input=move |e| set_hard_breaks.set(event_target_checked(&e))
                     />
                 </div>
                 <div>
                     <span>debug mode</span>
-                    <input type="checkbox" name="debug-switch" 
-                           on:input=move |_| set_debug_mode(true)
+                    <input type="checkbox" name="debug-switch"
+                           on:input=move |_| set_debug_mode.set(true)
                     />
                 </div>
             </div>

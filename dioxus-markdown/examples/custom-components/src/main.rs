@@ -20,10 +20,10 @@ static MARKDOWN_SOURCE: &str = r#"
 "#;
 
 #[component]
-fn Counter(cx: Scope, initial: i32) -> Element {
+fn Counter(cx: Scope, initial: i32) -> Element<'a> {
     let mut count = use_state(cx, || *initial);
 
-    cx.render(rsx!{
+    cx.render(rsx! {
         div{
             button {
                 onclick: move |_| count-=1,
@@ -40,7 +40,7 @@ fn Counter(cx: Scope, initial: i32) -> Element {
 
 #[component]
 fn ColorBox<'a>(cx: Scope, children: Element<'a>) -> Element<'a> {
-    cx.render(rsx!{
+    cx.render(rsx! {
         div{
             style: "border: 2px solid blue",
             children
@@ -50,22 +50,19 @@ fn ColorBox<'a>(cx: Scope, children: Element<'a>) -> Element<'a> {
 
 // create a component that renders a div with the text "Hello, world!"
 fn App(cx: Scope) -> Element {
-
     let mut components = CustomComponents::new();
 
-    components.register(
-        "Counter",
-        |cx, props| Ok(render!{
+    components.register("Counter", |cx, props| {
+        Ok(render! {
             Counter {initial: props.get_parsed_optional("initial")?.unwrap_or(0)}
         })
-    );
+    });
 
-    components.register(
-       "box",
-        |cx, props| Ok(render!{
+    components.register("box", |cx, props| {
+        Ok(render! {
             ColorBox {props.children}
         })
-    );
+    });
 
     cx.render(rsx! {
         h1 {"Source"}

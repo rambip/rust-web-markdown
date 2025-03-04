@@ -9,7 +9,6 @@ use leptos_markdown::*;
 //     }}
 // }
 
-
 #[component]
 pub fn SimpleCounter(initial_value: i32) -> impl IntoView {
     // create a reactive signal with the initial value
@@ -17,7 +16,7 @@ pub fn SimpleCounter(initial_value: i32) -> impl IntoView {
 
     // create event handlers for our buttons
     // note that `value` and `set_value` are `Copy`, so it's super easy to move them into closures
-    let clear = move |_| set_value(0);
+    let clear = move |_| set_value.set(0);
     let decrement = move |_| set_value.update(|value| *value -= 1);
     let increment = move |_| set_value.update(|value| *value += 1);
 
@@ -35,7 +34,7 @@ pub fn SimpleCounter(initial_value: i32) -> impl IntoView {
 
 #[component]
 fn BlueBox(children: Children) -> impl IntoView {
-    view!{
+    view! {
         <div style="border: 2px solid blue">
             {children()}
         </div>
@@ -62,19 +61,19 @@ static MARKDOWN_SOURCE: &'static str = r#"
 fn App() -> impl IntoView {
     let mut components = CustomComponents::new();
 
-    components.register("Counter", 
-        |props| Ok(view!{
+    components.register("Counter", |props| {
+        Ok(view! {
             <SimpleCounter initial_value=props.get_parsed_optional("initial")?.unwrap_or(0)/>
         })
-    );
+    });
 
-    components.register("box", 
-        |props| Ok(view!{
+    components.register("box", |props| {
+        Ok(view! {
             <BlueBox>{props.children}</BlueBox>
         })
-    );
+    });
 
-    view!{
+    view! {
         <h1>"The source"</h1>
         <Markdown
             src=format!("```md\n{MARKDOWN_SOURCE}\n")
@@ -88,7 +87,6 @@ fn App() -> impl IntoView {
     }
 }
 
-
-fn main(){
+fn main() {
     mount_to_body(App)
 }
