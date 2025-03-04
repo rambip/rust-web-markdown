@@ -7,7 +7,6 @@ use syntect::parsing::SyntaxSet;
 
 use pulldown_cmark::{Alignment, CodeBlockKind, Event, Tag, TagEnd};
 
-#[cfg(feature = "maths")]
 #[derive(Eq, PartialEq)]
 enum MathMode {
     Inline,
@@ -146,6 +145,15 @@ fn render_maths<'a, 'callback, F: Context<'a, 'callback>>(
         Err(_) => Err(HtmlError::Math),
     }
 }
+#[cfg(not(feature = "maths"))]
+fn render_maths<'a, 'callback, F: Context<'a, 'callback>>(
+    _cx: F,
+    _content: &str,
+    _display_mode: MathMode,
+    _range: Range<usize>,
+) -> Result<F::View, HtmlError> {
+    Err(HtmlError::Math)
+}
 
 /// `align_string(align)` gives the css string
 /// that is used to align text according to `align`
@@ -238,11 +246,8 @@ where
             HardBreak => Ok(self.cx.el_br()),
             Rule => Ok(cx.render_rule(range)),
             TaskListMarker(m) => Ok(cx.render_tasklist_marker(m, range)),
-            #[cfg(feature = "maths")]
             InlineMath(content) => render_maths(self.cx, &content, MathMode::Inline, range),
             DisplayMath(content) => render_maths(self.cx, &content, MathMode::Display, range),
-            #[cfg(not(feature = "maths"))]
-            Math(_, _) => Err(HtmlError::Math),
         };
 
         Some(rendered.unwrap_or_else(|e| {
