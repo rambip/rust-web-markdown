@@ -505,7 +505,29 @@ where
                 }
                 cx.el_empty()
             }
-            _ => todo!(),
+            Tag::DefinitionList => {
+                return Err(HtmlError::not_implemented(
+                    "definition list not implemented",
+                ))
+            }
+            Tag::DefinitionListTitle => {
+                return Err(HtmlError::not_implemented(
+                    "definition list not implemented",
+                ))
+            }
+            Tag::DefinitionListDefinition => {
+                return Err(HtmlError::not_implemented(
+                    "definition list not implemented",
+                ))
+            }
+            Tag::Superscript => {
+                return Err(HtmlError::not_implemented(
+                    "superscript list not implemented",
+                ))
+            }
+            Tag::Subscript => {
+                return Err(HtmlError::not_implemented("subscript list not implemented"))
+            }
         })
     }
 }
