@@ -36,7 +36,9 @@ impl Component for App {
                     rows={80} cols={50}
                     style={"margin: 20px"}
                 />
-                <Markdown src={self.content.clone()} wikilinks=true/>
+                <div>
+                    <Markdown src={self.content.clone()}/>
+                </div>
             </div>
         }
     }
