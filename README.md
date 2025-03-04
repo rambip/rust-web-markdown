@@ -35,4 +35,4 @@ see [here](https://rambip.github.io/rust-web-markdown/editor)
 see [here](https://rambip.github.io/rust-web-markdown/onclick)
 
 ## Custom Components
-see [here](https://rambip.github.io/rust-web-markdown/custom_components)
+see [here](https://rambip.github.io/rust-web-markdown/custom-components)
