@@ -2285,22 +2285,22 @@ dependencies = [
 
 [[package]]
 name = "pulldown-cmark"
-version = "0.9.2"
-source = "git+https://github.com/ollpu/pulldown-cmark.git?branch=alt-math#f923db20143aac50abe021bc6428ef686c5431ff"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e8bbe1a966bd2f362681a44f6edce3c2310ac21e4d5067a6e7ec396297a6ea0"
 dependencies = [
  "bitflags 2.8.0",
  "getopts",
  "memchr",
+ "pulldown-cmark-escape",
  "unicase",
 ]
 
 [[package]]
-name = "pulldown-cmark-wikilink"
-version = "0.1.4"
-source = "git+https://github.com/rambip/pulldown-cmark-wikilink#0f4c29624c77713ddcc08b4967d091a4c03f290d"
-dependencies = [
- "pulldown-cmark",
-]
+name = "pulldown-cmark-escape"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "007d8adb5ddab6f8e3f491ac63566a7d5002cc7ed73901f72057943fa71ae1ae"
 
 [[package]]
 name = "quick-xml"
@@ -2400,7 +2400,7 @@ version = "0.2.0"
 dependencies = [
  "katex",
  "lazy_static",
- "pulldown-cmark-wikilink",
+ "pulldown-cmark",
  "syntect",
  "web-sys",
 ]

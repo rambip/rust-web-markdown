@@ -1,5 +1,5 @@
-use pulldown_cmark_wikilink::{ParserOffsetIter, LinkType, Event};
-pub use pulldown_cmark_wikilink::{Options, CowStr};
+pub use pulldown_cmark::{CowStr, Options};
+use pulldown_cmark::{Event, LinkType, Parser};
 
 use core::ops::Range;
 use std::collections::BTreeMap;
@@ -11,11 +11,10 @@ mod utils;
 
 mod component;
 
-
 pub struct ElementAttributes<H> {
     pub classes: Vec<String>,
     pub style: Option<String>,
-    pub on_click: Option<H>
+    pub on_click: Option<H>,
 }
 
 impl<H> Default for ElementAttributes<H> {
@@ -23,7 +22,7 @@ impl<H> Default for ElementAttributes<H> {
         Self {
             style: None,
             classes: vec![],
-            on_click: None
+            on_click: None,
         }
     }
 }
@@ -45,11 +44,12 @@ pub enum HtmlElement {
     Bold,
     StrikeThrough,
     Pre,
-    Code
+    Code,
 }
 
 pub trait Context<'a, 'callback>: Copy + 'a
-where 'callback: 'a
+where
+    'callback: 'a,
 {
     type View: Clone + 'callback;
     type Handler<T: 'callback>: 'callback;
@@ -58,26 +58,33 @@ where 'callback: 'a
     /// get all the properties from the context
     fn props(self) -> MarkdownProps<'a>;
 
-    /// write the frontmatter (or metadata) string 
+    /// write the frontmatter (or metadata) string
     /// present at the top of the markdown source
     fn set_frontmatter(self, frontmatter: String);
 
-    fn render_links(self, link: LinkDescription<Self::View>) 
-        -> Result<Self::View, String>;
+    fn render_links(self, link: LinkDescription<Self::View>) -> Result<Self::View, String>;
 
     /// calls a callback with the given input
     fn call_handler<T>(callback: &Self::Handler<T>, input: T);
 
     /// creates a callback that will fire when the user clicks on markdown
-    fn make_md_handler(self, position: Range<usize>, stop_propagation: bool) -> Self::Handler<Self::MouseEvent>;
+    fn make_md_handler(
+        self,
+        position: Range<usize>,
+        stop_propagation: bool,
+    ) -> Self::Handler<Self::MouseEvent>;
 
-    #[cfg(feature="debug")]
+    #[cfg(feature = "debug")]
     fn send_debug_info(self, info: Vec<String>);
-
 
     /// creates a html element
     /// `attributes` contains the html attributes for this element
-    fn el_with_attributes(self, e: HtmlElement, inside: Self::View, attributes: ElementAttributes<Self::Handler<Self::MouseEvent>>) -> Self::View;
+    fn el_with_attributes(
+        self,
+        e: HtmlElement,
+        inside: Self::View,
+        attributes: ElementAttributes<Self::Handler<Self::MouseEvent>>,
+    ) -> Self::View;
 
     /// creates a html element, with default attributes
     fn el(self, e: HtmlElement, inside: Self::View) -> Self::View {
@@ -85,13 +92,17 @@ where 'callback: 'a
     }
 
     /// renders raw html, inside a span
-    fn el_span_with_inner_html(self, inner_html: String, attributes: ElementAttributes<Self::Handler<Self::MouseEvent>>) -> Self::View;
+    fn el_span_with_inner_html(
+        self,
+        inner_html: String,
+        attributes: ElementAttributes<Self::Handler<Self::MouseEvent>>,
+    ) -> Self::View;
 
     /// renders a `hr` element, with attributes
     fn el_hr(self, attributes: ElementAttributes<Self::Handler<Self::MouseEvent>>) -> Self::View;
 
     /// renders a `br` element
-    fn el_br(self)-> Self::View;
+    fn el_br(self) -> Self::View;
 
     /// takes a vector of views and return a view
     fn el_fragment(self, children: Vec<Self::View>) -> Self::View;
@@ -110,16 +121,22 @@ where 'callback: 'a
     /// renders raw text
     fn el_text(self, text: CowStr<'a>) -> Self::View;
 
-
     // renders a checkbox with attributes
-    fn el_input_checkbox(self, checked: bool, attributes: ElementAttributes<Self::Handler<Self::MouseEvent>>) -> Self::View;
-
+    fn el_input_checkbox(
+        self,
+        checked: bool,
+        attributes: ElementAttributes<Self::Handler<Self::MouseEvent>>,
+    ) -> Self::View;
 
     /// add a styleshit to the markdown component
     fn mount_dynamic_link(self, rel: &str, href: &str, integrity: &str, crossorigin: &str);
 
     fn has_custom_component(self, name: &str) -> bool;
-    fn render_custom_component(self, name: &str, input: MdComponentProps<Self::View>) -> Result<Self::View, ComponentCreationError>;
+    fn render_custom_component(
+        self,
+        name: &str,
+        input: MdComponentProps<Self::View>,
+    ) -> Result<Self::View, ComponentCreationError>;
 
     fn render_tasklist_marker(self, m: bool, position: Range<usize>) -> Self::View {
         let attributes = ElementAttributes {
@@ -130,56 +147,44 @@ where 'callback: 'a
     }
 
     fn render_rule(self, range: Range<usize>) -> Self::View {
-        let attributes = ElementAttributes{
+        let attributes = ElementAttributes {
             on_click: Some(self.make_md_handler(range, false)),
             ..Default::default()
         };
         self.el_hr(attributes)
     }
 
-
     fn render_code(self, s: CowStr<'a>, range: Range<usize>) -> Self::View {
         let callback = self.make_md_handler(range.clone(), false);
-        let attributes = ElementAttributes{
+        let attributes = ElementAttributes {
             on_click: Some(callback),
             ..Default::default()
         };
         self.el_with_attributes(HtmlElement::Code, self.el_text(s), attributes)
     }
 
-
-    fn render_text(self, s: CowStr<'a>, range: Range<usize>) -> Self::View{
+    fn render_text(self, s: CowStr<'a>, range: Range<usize>) -> Self::View {
         let callback = self.make_md_handler(range, false);
-        let attributes = ElementAttributes{
+        let attributes = ElementAttributes {
             on_click: Some(callback),
             ..Default::default()
         };
         self.el_with_attributes(HtmlElement::Span, self.el_text(s), attributes)
     }
 
-
     fn has_custom_links(self) -> bool;
 
-
-    fn render_link(self, link: LinkDescription<Self::View>) 
-        -> Result<Self::View, String>
-    {
-        if self.has_custom_links(){
+    fn render_link(self, link: LinkDescription<Self::View>) -> Result<Self::View, String> {
+        if self.has_custom_links() {
             self.render_links(link)
-        }
-        else {
-            Ok(
-                if link.image {
-                    self.el_img(link.url, link.title)
-                }
-                else {
-                    self.el_a(link.content, link.url)
-                }
-            )
+        } else {
+            Ok(if link.image {
+                self.el_img(link.url, link.title)
+            } else {
+                self.el_a(link.content, link.url)
+            })
         }
     }
-
-
 }
 
 /// the description of a link, used to render it with a custom callback.
@@ -191,7 +196,7 @@ pub struct LinkDescription<V> {
     /// the html view of the element under the link
     pub content: V,
 
-    /// the title of the link. 
+    /// the title of the link.
     /// If you don't know what it is, don't worry: it is ofter empty
     pub title: String,
 
@@ -202,12 +207,11 @@ pub struct LinkDescription<V> {
     pub image: bool,
 }
 
-
 pub enum HtmlError {
     NotImplemented(String),
     Link(String),
     Syntax(String),
-    CustomComponent{name: String, msg: String},
+    CustomComponent { name: String, msg: String },
     Math,
 }
 
@@ -234,7 +238,7 @@ pub enum HtmlError {
 /// ```
 pub struct MdComponentProps<V> {
     pub attributes: BTreeMap<String, String>,
-    pub children: V
+    pub children: V,
 }
 
 impl<V> MdComponentProps<V> {
@@ -246,34 +250,33 @@ impl<V> MdComponentProps<V> {
 
     /// returns the attribute corresponding to the key `name`, once parsed.
     /// If the attribute doesn't exist or if the parsing fail, returns an error.
-    pub fn get_parsed<T>(&self, name: &str) -> Result<T, String> 
-    where 
+    pub fn get_parsed<T>(&self, name: &str) -> Result<T, String>
+    where
         T: std::str::FromStr,
-        T::Err: core::fmt::Debug
+        T::Err: core::fmt::Debug,
     {
         match self.attributes.get(name) {
             Some(x) => x.clone().parse().map_err(|e| format!("{e:?}")),
-            None => Err(format!("please provide the attribute `{name}`"))
+            None => Err(format!("please provide the attribute `{name}`")),
         }
     }
 
     /// same thing as `get_parsed`, but if the attribute doesn't exist,
     /// return None
     pub fn get_parsed_optional<T>(&self, name: &str) -> Result<Option<T>, String>
-        where 
-            T: std::str::FromStr,
-            T::Err: core::fmt::Debug
+    where
+        T: std::str::FromStr,
+        T::Err: core::fmt::Debug,
     {
         match self.attributes.get(name) {
             Some(x) => match x.parse() {
                 Ok(a) => Ok(Some(a)),
-                Err(e) => Err(format!("{e:?}"))
-            }
-            None => Ok(None)
+                Err(e) => Err(format!("{e:?}")),
+            },
+            None => Ok(None),
         }
     }
 }
-
 
 /// error raised by the user of the library,
 /// when creating a component.
@@ -286,34 +289,29 @@ impl<T: std::fmt::Debug> From<T> for ComponentCreationError {
     }
 }
 
-
-
-
-pub struct MarkdownProps<'a>
-{
+pub struct MarkdownProps<'a> {
     pub hard_line_breaks: bool,
 
     pub wikilinks: bool,
 
-    pub parse_options: Option<&'a pulldown_cmark_wikilink::Options>,
+    pub parse_options: Option<&'a pulldown_cmark::Options>,
 
     pub theme: Option<&'a str>,
 }
 
 pub fn render_markdown<'a, 'callback, F: Context<'a, 'callback>>(
-    cx: F, 
-    source: &'a str, 
-    ) -> F::View 
-{
-
+    cx: F,
+    source: &'a str,
+) -> F::View {
     let parse_options_default = Options::all();
     let options = cx.props().parse_options.unwrap_or(&parse_options_default);
-    let mut stream: Vec<_>
-        = ParserOffsetIter::new_ext(source, *options, cx.props().wikilinks).collect();
+    let mut stream: Vec<_> = Parser::new_ext(source, *options)
+        .into_offset_iter()
+        .collect();
 
-    #[cfg(feature="debug")]
+    #[cfg(feature = "debug")]
     {
-        let debug_info : Vec<String> = stream.iter().map(|x| format!("{:?}", x)).collect();
+        let debug_info: Vec<String> = stream.iter().map(|x| format!("{:?}", x)).collect();
         cx.send_debug_info(debug_info)
     }
 
@@ -325,15 +323,13 @@ pub fn render_markdown<'a, 'callback, F: Context<'a, 'callback>>(
         }
     }
 
-    let elements = Renderer::new(cx, &mut stream.into_iter())
-        .collect::<Vec<_>>();
-
+    let elements = Renderer::new(cx, &mut stream.into_iter()).collect::<Vec<_>>();
 
     cx.mount_dynamic_link(
         "stylesheet",
         "https://cdn.jsdelivr.net/npm/katex@0.16.7/dist/katex.min.css",
         "sha384-3UiQGuEI4TTMaFmGIZumfRPtfKQ3trwQE2JgosJxCnGmQpL/lJdjpcHkaaFwHlcI",
-        "anonymous"
+        "anonymous",
     );
 
     cx.el_fragment(elements)
