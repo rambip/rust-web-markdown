@@ -52,16 +52,16 @@ Even todo lists:
 "#;
 
 // create a component that renders a div with the text "Hello, world!"
-fn App(cx: Scope) -> Element {
-    cx.render(rsx! {
+fn App() -> Element {
+    rsx! {
         Markdown {
             src: MARKDOWN_SOURCE,
             wikilinks: true,
         }
-    })
+    }
 }
 
 fn main() {
     // launch the web app
-    dioxus_web::launch(App);
+    dioxus::launch(App);
 }

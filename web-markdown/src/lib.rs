@@ -7,8 +7,6 @@ use std::collections::BTreeMap;
 mod render;
 use render::Renderer;
 
-mod utils;
-
 mod component;
 
 pub struct ElementAttributes<H> {
@@ -56,11 +54,11 @@ where
     type MouseEvent: 'static;
 
     /// get all the properties from the context
-    fn props(self) -> MarkdownProps<'a>;
+    fn props(self) -> MarkdownProps;
 
     /// write the frontmatter (or metadata) string
     /// present at the top of the markdown source
-    fn set_frontmatter(self, frontmatter: String);
+    fn set_frontmatter(&mut self, frontmatter: String);
 
     fn render_links(self, link: LinkDescription<Self::View>) -> Result<Self::View, String>;
 
@@ -289,23 +287,29 @@ impl<T: std::fmt::Debug> From<T> for ComponentCreationError {
     }
 }
 
-pub struct MarkdownProps<'a> {
+pub struct MarkdownProps {
     pub hard_line_breaks: bool,
 
     pub wikilinks: bool,
 
-    pub parse_options: Option<&'a pulldown_cmark::Options>,
+    pub parse_options: Option<pulldown_cmark::Options>,
 
-    pub theme: Option<&'a str>,
+    pub theme: Option<&'static str>,
 }
 
 pub fn render_markdown<'a, 'callback, F: Context<'a, 'callback>>(
     cx: F,
     source: &'a str,
 ) -> F::View {
-    let parse_options_default = Options::all();
-    let options = cx.props().parse_options.unwrap_or(&parse_options_default);
-    let mut stream: Vec<_> = Parser::new_ext(source, *options)
+    let parse_options_default = Options::ENABLE_GFM
+        | Options::ENABLE_MATH
+        | Options::ENABLE_TABLES
+        | Options::ENABLE_TASKLISTS
+        | Options::ENABLE_WIKILINKS
+        | Options::ENABLE_STRIKETHROUGH
+        | Options::ENABLE_YAML_STYLE_METADATA_BLOCKS;
+    let options = cx.props().parse_options.unwrap_or(parse_options_default);
+    let mut stream: Vec<_> = Parser::new_ext(source, options)
         .into_offset_iter()
         .collect();
 

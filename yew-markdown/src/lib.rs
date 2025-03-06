@@ -1,16 +1,12 @@
 use rust_web_markdown::{
-    render_markdown, ElementAttributes, HtmlElement, MarkdownProps, Context,
-    CowStr, 
+    render_markdown, Context, CowStr, ElementAttributes, HtmlElement, MarkdownProps,
 };
-
 
 use core::ops::Range;
 
 use std::collections::BTreeMap;
 
-pub use rust_web_markdown::{
-    LinkDescription, Options, ComponentCreationError
-};
+pub use rust_web_markdown::{ComponentCreationError, LinkDescription, Options};
 
 use yew::prelude::{
     function_component, html, AttrValue, Callback, Html, Properties, UseStateHandle,
@@ -20,7 +16,6 @@ pub type MdComponentProps = rust_web_markdown::MdComponentProps<Html>;
 
 use web_sys::{window, MouseEvent};
 
-
 #[derive(Clone, Debug)]
 pub struct MarkdownMouseEvent {
     /// the original mouse event triggered when a text element was clicked on
@@ -28,7 +23,6 @@ pub struct MarkdownMouseEvent {
 
     /// the corresponding range in the markdown source, as a slice of [`u8`][u8]
     pub position: Range<usize>,
-
     // TODO: add a clonable tag for the type of the element
     // pub tag: pulldown_cmark::Tag<'a>,
 }
@@ -37,18 +31,17 @@ pub struct MarkdownMouseEvent {
 /// It is called when therer is a `<CustomComponent>` inside the markdown source.
 /// It is basically a hashmap but more efficient for a small number of items
 #[derive(PartialEq, Clone)]
-pub struct CustomComponents(BTreeMap<&'static str, 
-                                   Callback<MdComponentProps, Result<Html, ComponentCreationError>>
->);
+pub struct CustomComponents(
+    BTreeMap<&'static str, Callback<MdComponentProps, Result<Html, ComponentCreationError>>>,
+);
 
 impl Default for CustomComponents {
     fn default() -> Self {
-        Self (Default::default())
+        Self(Default::default())
     }
 }
 
-impl CustomComponents
-{
+impl CustomComponents {
     pub fn new() -> Self {
         Self(Default::default())
     }
@@ -57,12 +50,12 @@ impl CustomComponents
     /// The function `component` takes a context and props of type `MdComponentProps`
     /// and returns html
     pub fn register<F>(&mut self, name: &'static str, component: F)
-        where F: Fn(MdComponentProps) -> Result<Html, ComponentCreationError> + 'static,
+    where
+        F: Fn(MdComponentProps) -> Result<Html, ComponentCreationError> + 'static,
     {
         self.0.insert(name, Callback::from(component));
     }
 }
-
 
 impl<'a> Context<'a, 'static> for &'a Props {
     type View = Html;
@@ -71,7 +64,7 @@ impl<'a> Context<'a, 'static> for &'a Props {
 
     type MouseEvent = MouseEvent;
 
-    fn props(self) -> MarkdownProps<'a> {
+    fn props(self) -> MarkdownProps {
         let Props {
             theme,
             wikilinks,
@@ -81,15 +74,14 @@ impl<'a> Context<'a, 'static> for &'a Props {
         } = self;
 
         MarkdownProps {
-            theme: theme.as_deref(),
+            theme: *theme,
             wikilinks: *wikilinks,
             hard_line_breaks: *hard_line_breaks,
-            parse_options: parse_options.as_ref(),
+            parse_options: *parse_options,
         }
     }
 
-
-    #[cfg(feature="debug")]
+    #[cfg(feature = "debug")]
     fn send_debug_info(self, info: Vec<String>) {
         if let Some(sender) = &self.send_debug_info {
             sender.emit(info)
@@ -177,7 +169,11 @@ impl<'a> Context<'a, 'static> for &'a Props {
         }
     }
 
-    fn el_span_with_inner_html(self, inner_html: String, attributes: ElementAttributes<Callback<MouseEvent>>) -> Self::View {
+    fn el_span_with_inner_html(
+        self,
+        inner_html: String,
+        attributes: ElementAttributes<Callback<MouseEvent>>,
+    ) -> Self::View {
         let style = attributes.style.map(|x| x.to_string());
         let classes: Vec<_> = attributes.classes.iter().map(|x| x.to_string()).collect();
         let onclick = attributes.on_click;
@@ -219,21 +215,21 @@ impl<'a> Context<'a, 'static> for &'a Props {
     fn mount_dynamic_link(self, rel: &str, href: &str, integrity: &str, crossorigin: &str) {
         let document = window().unwrap().document().unwrap();
 
-        let link = document
-            .create_element("link")
-            .unwrap();
+        let link = document.create_element("link").unwrap();
 
         link.set_attribute("rel", rel).unwrap();
         link.set_attribute("href", href).unwrap();
         link.set_attribute("integrity", integrity).unwrap();
         link.set_attribute("crossorigin", crossorigin).unwrap();
 
-        document.head()
-            .unwrap()
-            .append_child(&link).unwrap();
+        document.head().unwrap().append_child(&link).unwrap();
     }
 
-    fn el_input_checkbox(self, checked: bool, attributes: ElementAttributes<Callback<MouseEvent>>) -> Self::View {
+    fn el_input_checkbox(
+        self,
+        checked: bool,
+        attributes: ElementAttributes<Callback<MouseEvent>>,
+    ) -> Self::View {
         let style = attributes.style.map(|x| x.to_string());
         let classes: Vec<_> = attributes.classes.iter().map(|x| x.to_string()).collect();
         let on_click = attributes.on_click;
@@ -250,7 +246,11 @@ impl<'a> Context<'a, 'static> for &'a Props {
         callback.emit(input)
     }
 
-    fn make_md_handler(self, position: Range<usize>, stop_propagation: bool) -> Self::Handler<MouseEvent> {
+    fn make_md_handler(
+        self,
+        position: Range<usize>,
+        stop_propagation: bool,
+    ) -> Self::Handler<MouseEvent> {
         match &self.onclick {
             Some(f) => {
                 let f = f.clone();
@@ -263,9 +263,8 @@ impl<'a> Context<'a, 'static> for &'a Props {
                         position: position.clone(),
                     };
                     f.emit(report)
-                    }
-                )
-            },
+                })
+            }
             None => Callback::noop(),
         }
     }
@@ -279,7 +278,7 @@ impl<'a> Context<'a, 'static> for &'a Props {
         Ok(f.emit(link))
     }
 
-    fn set_frontmatter(self, frontmatter: String) {
+    fn set_frontmatter(&mut self, frontmatter: String) {
         if let Some(setter) = &self.frontmatter {
             setter.set(frontmatter)
         }
@@ -289,11 +288,14 @@ impl<'a> Context<'a, 'static> for &'a Props {
         self.components.0.get(name).is_some()
     }
 
-    fn render_custom_component(self, name: &str, input: rust_web_markdown::MdComponentProps<Self::View>) -> Result<Self::View, ComponentCreationError> {
+    fn render_custom_component(
+        self,
+        name: &str,
+        input: rust_web_markdown::MdComponentProps<Self::View>,
+    ) -> Result<Self::View, ComponentCreationError> {
         let f = self.components.0.get(name).unwrap();
         f.emit(input)
     }
-
 }
 
 #[derive(PartialEq, Properties, Clone)]
@@ -307,7 +309,7 @@ pub struct Props {
     pub render_links: Option<Callback<LinkDescription<Html>, Html>>,
 
     #[prop_or_default]
-    pub theme: Option<String>,
+    pub theme: Option<&'static str>,
 
     #[prop_or(false)]
     pub wikilinks: bool,

@@ -20,10 +20,10 @@ static MARKDOWN_SOURCE: &str = r#"
 "#;
 
 #[component]
-fn Counter(cx: Scope, initial: i32) -> Element<'a> {
-    let mut count = use_state(cx, || *initial);
+fn Counter(initial: i32) -> Element {
+    let mut count = use_signal(|| initial);
 
-    cx.render(rsx! {
+    rsx! {
         div{
             button {
                 onclick: move |_| count-=1,
@@ -35,36 +35,37 @@ fn Counter(cx: Scope, initial: i32) -> Element<'a> {
                 "+"
             }
         }
-    })
+    }
 }
 
 #[component]
-fn ColorBox<'a>(cx: Scope, children: Element<'a>) -> Element<'a> {
-    cx.render(rsx! {
+fn ColorBox(children: Element) -> Element {
+    rsx! {
         div{
             style: "border: 2px solid blue",
-            children
+            {children}
         }
-    })
+    }
 }
 
 // create a component that renders a div with the text "Hello, world!"
-fn App(cx: Scope) -> Element {
+fn App() -> Element {
     let mut components = CustomComponents::new();
 
-    components.register("Counter", |cx, props| {
-        Ok(render! {
+    components.register("Counter", |props| {
+        Ok(rsx! {
             Counter {initial: props.get_parsed_optional("initial")?.unwrap_or(0)}
         })
     });
 
-    components.register("box", |cx, props| {
-        Ok(render! {
-            ColorBox {props.children}
+    components.register("box", |props| {
+        let children = props.children;
+        Ok(rsx! {
+            ColorBox {children}
         })
     });
 
-    cx.render(rsx! {
+    rsx! {
         h1 {"Source"}
         Markdown {
             src: "```md\n{MARKDOWN_SOURCE}\n``"
@@ -75,10 +76,10 @@ fn App(cx: Scope) -> Element {
             src: MARKDOWN_SOURCE,
             components: components
         }
-    })
+    }
 }
 
 fn main() {
     // launch the web app
-    dioxus_web::launch(App);
+    dioxus::launch(App);
 }

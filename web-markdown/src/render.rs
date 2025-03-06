@@ -16,10 +16,8 @@ enum MathMode {
 #[cfg(feature = "maths")]
 use katex;
 
-use super::{Context, ElementAttributes, HtmlError, LinkDescription, MdComponentProps};
-use crate::utils::as_closing_tag;
-
 use super::HtmlElement::*;
+use super::{Context, ElementAttributes, HtmlError, LinkDescription, MdComponentProps};
 
 use crate::component::{ComponentCall, CustomHtmlTag};
 
@@ -227,7 +225,7 @@ where
                 // when this renderer was created
                 match self.end_tag {
                     Some(t) if t == end => return None,
-                    Some(t) => panic!("{t:?} is a wrong closing tag"),
+                    Some(t) => panic!("{end:?} is a wrong closing tag, expected {t:?}"),
                     None => panic!("didn't expect a closing tag"),
                 }
             }
@@ -396,7 +394,7 @@ where
             stream: self.stream,
             column_alignment: self.column_alignment.clone(),
             cell_index: 0,
-            end_tag: Some(as_closing_tag(&tag)),
+            end_tag: Some(tag.to_end()),
             current_component: self.current_component.clone(),
         };
         self.cx.el_fragment(sub_renderer.collect())
@@ -410,7 +408,7 @@ where
             _ => panic!("expected string event, got something else"),
         };
 
-        self.assert_closing_tag(as_closing_tag(&tag));
+        self.assert_closing_tag(tag.to_end());
         text
     }
 
@@ -425,7 +423,7 @@ where
     }
 
     fn render_tag(&mut self, tag: Tag<'a>, range: Range<usize>) -> Result<F::View, HtmlError> {
-        let cx = self.cx;
+        let mut cx = self.cx;
         Ok(match tag.clone() {
             Tag::HtmlBlock => {
                 let raw_html = match self.stream.next() {
@@ -521,13 +519,9 @@ where
                 ))
             }
             Tag::Superscript => {
-                return Err(HtmlError::not_implemented(
-                    "superscript list not implemented",
-                ))
+                return Err(HtmlError::not_implemented("superscript not implemented"))
             }
-            Tag::Subscript => {
-                return Err(HtmlError::not_implemented("subscript list not implemented"))
-            }
+            Tag::Subscript => return Err(HtmlError::not_implemented("subscript not implemented")),
         })
     }
 }

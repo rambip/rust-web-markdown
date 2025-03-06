@@ -1,29 +1,26 @@
 #![allow(non_snake_case)]
 
-
 use dioxus::prelude::*;
 
+use dioxus_markdown::debug::DEBUG_INFO;
 use dioxus_markdown::Markdown;
-use dioxus_markdown::debug::EventInfo;
 
 #[component]
-fn Logger(cx: Scope) -> Element {
-    let debug_info = use_shared_state::<EventInfo>(cx).unwrap();
-    render!{
-        debug_info.read().0.iter().map(|x: &String| cx.render(rsx!{li {x.clone()}}))
+fn Logger() -> Element {
+    rsx! {
+        {
+            DEBUG_INFO.read().iter().map(|x| rsx! {li {"{x}"}})
+        }
     }
 }
 
+fn App() -> Element {
+    let mut content = use_signal(|| String::from("**bold**"));
+    let mut wikilinks_enabled = use_signal(|| false);
+    let mut hardbreaks_enabled = use_signal(|| false);
+    let mut debug_enabled = use_signal(|| false);
 
-fn App(cx: Scope) -> Element {
-    let content = use_state(cx, || String::from("**bold**"));
-    let wikilinks_enabled = use_state(cx, || false);
-    let hardbreaks_enabled = use_state(cx, || false);
-    let debug_enabled = use_state(cx, || false);
-
-    use_shared_state_provider(cx, || EventInfo(vec![]));
-
-    render!{
+    rsx! {
         h1 {"Markdown Editor"},
         div {
             class: "container",
@@ -31,24 +28,24 @@ fn App(cx: Scope) -> Element {
                 textarea {
                     value: "{content}",
                     rows: "30",
-                    oninput: move |evt| content.set(evt.value.clone()),
+                    oninput: move |evt| content.set(evt.value()),
                 },
                 div {
                     label { r#for: "wiki", "enable wikilinks" },
                     input {r#type: "checkbox", id: "wiki",
-                        oninput: move |e| wikilinks_enabled.set(e.value=="true")
+                        oninput: move |e| wikilinks_enabled.set(e.value()=="true")
                     }
                 }
                 div {
                     label { r#for: "hardbreaks", "convert soft breaks to hard breaks" },
                     input {r#type: "checkbox", id: "hardbreaks",
-                        oninput: move |e| hardbreaks_enabled.set(e.value=="true")
+                        oninput: move |e| hardbreaks_enabled.set(e.value()=="true")
                     }
                 }
                 div {
                     label { r#for: "debug", "enable debugging" },
                     input {r#type: "checkbox", id: "debug",
-                        oninput: move |e| debug_enabled.set(e.value=="true")
+                        oninput: move |e| debug_enabled.set(e.value()=="true")
                     }
                 }
             },
@@ -56,16 +53,14 @@ fn App(cx: Scope) -> Element {
                 class: "md-view",
                 Markdown {
                     src: content,
-                    wikilinks: *wikilinks_enabled.get(),
-                    hard_line_breaks: *hardbreaks_enabled.get(),
+                    wikilinks: wikilinks_enabled(),
+                    hard_line_breaks: hardbreaks_enabled(),
                 },
             }
             div {
                 class: "debug-view",
-                if **debug_enabled {
-                    cx.render(rsx!{
-                        Logger {}
-                    })
+                if debug_enabled() {
+                    Logger {}
                 }
             }
         }
@@ -73,5 +68,5 @@ fn App(cx: Scope) -> Element {
 }
 
 fn main() {
-    dioxus_web::launch(App)
+    dioxus::launch(App)
 }

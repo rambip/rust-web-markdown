@@ -1,7 +1,5 @@
 #![allow(non_snake_case)]
 
-
-
 use dioxus::prelude::*;
 
 use dioxus_markdown::*;
@@ -24,41 +22,41 @@ Here is how you can use it in your project:
 let range = use_state(|| 0..0);
 
 render!{
-    Markdown {src: source, on_click: move |e: MarkdownMouseEvent| 
+    Markdown {src: source, on_click: move |e: MarkdownMouseEvent|
         range.set(e.position)
     }
 }
 ```
 "#;
 
+fn App() -> Element {
+    let mut range = use_signal(|| 0..0);
 
-fn App(cx: Scope) -> Element {
-    let range = use_state(cx, || 0..0);
+    let (before, x) = MARKDOWN_SOURCE.split_at(range().start);
+    let (middle, after) = x.split_at(range().len());
 
-    let (before, x) = MARKDOWN_SOURCE.split_at(range.start);
-    let (middle, after) = x.split_at(range.len());
-
-    render!{
+    let onclick = move |e: MarkdownMouseEvent| range.set(e.position);
+    rsx! {
         div {
-            Markdown {src:MARKDOWN_SOURCE, on_click:move |e: MarkdownMouseEvent|{
-                range.set(e.position);
-            }
+            Markdown {
+                src:MARKDOWN_SOURCE,
+                on_click:onclick
             }
             br {}
             hr {}
             pre {
                 style: "border: 2 px solid orange",
-                before
+                {before}
                 span {
                     style: "background-color: orange",
-                    middle
+                    {middle}
                 }
-                after
+                {after}
             }
         }
     }
 }
 
 fn main() {
-    dioxus_web::launch(App)
+    dioxus::launch(App)
 }

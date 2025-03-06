@@ -1,25 +1,20 @@
 use rust_web_markdown::{
-    render_markdown, ElementAttributes, HtmlElement, Context,
-    CowStr,
-    MarkdownProps
+    render_markdown, Context, CowStr, ElementAttributes, HtmlElement, MarkdownProps,
 };
 
 pub type MdComponentProps = rust_web_markdown::MdComponentProps<View>;
 
-pub use rust_web_markdown::{
-    LinkDescription, Options, ComponentCreationError
-};
+pub use rust_web_markdown::{ComponentCreationError, LinkDescription, Options};
 
 use web_sys::MouseEvent;
 
-use leptos::*;
 use leptos::html::AnyElement;
+use leptos::*;
 
-use std::collections::BTreeMap;
 use core::ops::Range;
+use std::collections::BTreeMap;
 
-
-#[cfg(feature="debug")]
+#[cfg(feature = "debug")]
 pub mod debug {
     use super::*;
     #[derive(Copy, Clone)]
@@ -33,27 +28,24 @@ pub struct MarkdownMouseEvent {
 
     /// the corresponding range in the markdown source, as a slice of [`u8`][u8]
     pub position: Range<usize>,
-
     // TODO: add a clonable tag for the type of the element
     // pub tag: pulldown_cmark::Tag<'a>,
 }
 
-
 /// component store.
 /// It is called when therer is a `<CustomComponent>` inside the markdown source.
 /// It is basically a hashmap but more efficient for a small number of items
-pub struct CustomComponents(BTreeMap<&'static str, 
-                                   Callback<MdComponentProps, Result<View, ComponentCreationError>>
->);
+pub struct CustomComponents(
+    BTreeMap<&'static str, Callback<MdComponentProps, Result<View, ComponentCreationError>>>,
+);
 
 impl Default for CustomComponents {
     fn default() -> Self {
-        Self (Default::default())
+        Self(Default::default())
     }
 }
 
-impl CustomComponents
-{
+impl CustomComponents {
     pub fn new() -> Self {
         Self(Default::default())
     }
@@ -62,14 +54,14 @@ impl CustomComponents
     /// The function `component` takes a context and props of type `MdComponentProps`
     /// and returns html
     pub fn register<F, I>(&mut self, name: &'static str, component: F)
-        where F: Fn(MdComponentProps) -> Result<I, ComponentCreationError> + 'static,
-              I: IntoView
+    where
+        F: Fn(MdComponentProps) -> Result<I, ComponentCreationError> + 'static,
+        I: IntoView,
     {
         let closure = move |props| component(props).map(|x| x.into_view());
         self.0.insert(name, Callback::new(closure));
     }
 }
-
 
 impl<'a> Context<'a, 'static> for &'a __MdProps {
     type View = View;
@@ -78,16 +70,16 @@ impl<'a> Context<'a, 'static> for &'a __MdProps {
 
     type MouseEvent = MouseEvent;
 
-    fn props(self) -> rust_web_markdown::MarkdownProps<'a> {
+    fn props(self) -> rust_web_markdown::MarkdownProps {
         MarkdownProps {
             hard_line_breaks: self.hard_line_breaks.get(),
             wikilinks: self.wikilinks.get(),
-            parse_options: self.parse_options.as_ref(),
-            theme: self.theme.as_deref(),
+            parse_options: self.parse_options,
+            theme: self.theme,
         }
     }
 
-    #[cfg(feature="debug")]
+    #[cfg(feature = "debug")]
     fn send_debug_info(self, info: Vec<String>) {
         let set_event_info = use_context::<debug::EventInfo>();
 
@@ -139,10 +131,15 @@ impl<'a> Context<'a, 'static> for &'a __MdProps {
         r.into_view()
     }
 
-    fn el_span_with_inner_html(self, inner_html: String, attributes: ElementAttributes<Callback<MouseEvent>>) -> Self::View {
-        let mut r = view!{
+    fn el_span_with_inner_html(
+        self,
+        inner_html: String,
+        attributes: ElementAttributes<Callback<MouseEvent>>,
+    ) -> Self::View {
+        let mut r = view! {
             <span inner_html=inner_html></span>
-        }.into_any();
+        }
+        .into_any();
 
         if let Some(s) = attributes.style {
             r = r.attr("style", s.to_string())
@@ -197,16 +194,17 @@ impl<'a> Context<'a, 'static> for &'a __MdProps {
         link.set_attribute("integrity", integrity).unwrap();
         link.set_attribute("crossorigin", crossorigin).unwrap();
 
-        document.head()
-            .unwrap()
-            .append_child(&link).unwrap();
+        document.head().unwrap().append_child(&link).unwrap();
     }
 
-    fn el_input_checkbox(self, checked: bool, attributes: ElementAttributes<Callback<MouseEvent>>) -> Self::View {
+    fn el_input_checkbox(
+        self,
+        checked: bool,
+        attributes: ElementAttributes<Callback<MouseEvent>>,
+    ) -> Self::View {
         let mut r = html::input()
             .attr("type", "checkbox")
-            .attr("checked", checked)
-        ;
+            .attr("checked", checked);
         if let Some(c) = attributes.on_click {
             r = r.on(ev::click, move |e| Callable::call(&c, e));
         }
@@ -221,8 +219,11 @@ impl<'a> Context<'a, 'static> for &'a __MdProps {
         Callable::call(callback, input)
     }
 
-
-    fn make_md_handler(self, position: Range<usize>, stop_propagation: bool) -> Self::Handler<MouseEvent> {
+    fn make_md_handler(
+        self,
+        position: Range<usize>,
+        stop_propagation: bool,
+    ) -> Self::Handler<MouseEvent> {
         match self.on_click {
             Some(f) => {
                 let position = position.clone();
@@ -232,16 +233,16 @@ impl<'a> Context<'a, 'static> for &'a __MdProps {
                     }
                     let report = MarkdownMouseEvent {
                         position: position.clone(),
-                        mouse_event: e
+                        mouse_event: e,
                     };
                     Callable::call(&f, report)
                 })
             }
-            None => Callback::new(move |_| ())
+            None => Callback::new(move |_| ()),
         }
     }
 
-    fn set_frontmatter(self, frontmatter: String) {
+    fn set_frontmatter(&mut self, frontmatter: String) {
         if let Some(setter) = self.frontmatter {
             setter.set(frontmatter)
         }
@@ -251,8 +252,7 @@ impl<'a> Context<'a, 'static> for &'a __MdProps {
         self.render_links.is_some()
     }
 
-    fn render_links(self, link: LinkDescription<Self::View>) 
-        -> Result<Self::View, String> {
+    fn render_links(self, link: LinkDescription<Self::View>) -> Result<Self::View, String> {
         Ok(Callable::call(&self.render_links.unwrap(), link))
     }
 
@@ -260,13 +260,15 @@ impl<'a> Context<'a, 'static> for &'a __MdProps {
         self.components.0.get(name).is_some()
     }
 
-    fn render_custom_component(self, name: &str, input: MdComponentProps) 
-        -> Result<Self::View, rust_web_markdown::ComponentCreationError> {
+    fn render_custom_component(
+        self,
+        name: &str,
+        input: MdComponentProps,
+    ) -> Result<Self::View, rust_web_markdown::ComponentCreationError> {
         let f = self.components.0.get(name).unwrap();
         f.call(input)
     }
 }
-
 
 #[component]
 #[allow(unused)]
@@ -281,14 +283,14 @@ pub fn __Md(
     #[prop(optional, into)]
     on_click: Option<Callback<MarkdownMouseEvent>>,
 
-    /// 
+    ///
     #[prop(optional, into)]
     render_links: Option<Callback<LinkDescription<View>, leptos::View>>,
 
     /// the name of the theme used for syntax highlighting.
     /// Only the default themes of [syntect::Theme] are supported
     #[prop(optional, into)]
-    theme: Option<String>,
+    theme: Option<&'static str>,
 
     /// wether to enable wikilinks support.
     /// Wikilinks look like [[shortcut link]] or [[url|name]]
@@ -304,15 +306,12 @@ pub fn __Md(
     #[prop(optional, into)]
     parse_options: Option<Options>,
 
-    #[prop(optional, into)]
-    components: CustomComponents,
+    #[prop(optional, into)] components: CustomComponents,
 
-    #[prop(optional, into)]
-    frontmatter: Option<WriteSignal<String>>
+    #[prop(optional, into)] frontmatter: Option<WriteSignal<String>>,
 ) -> impl IntoView {
     ()
 }
-
 
 #[allow(non_snake_case)]
 pub fn Markdown(props: __MdProps) -> impl IntoView {
