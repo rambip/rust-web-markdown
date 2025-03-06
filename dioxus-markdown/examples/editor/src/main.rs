@@ -3,7 +3,7 @@
 use dioxus::prelude::*;
 
 use dioxus_markdown::debug::DEBUG_INFO;
-use dioxus_markdown::Markdown;
+use dioxus_markdown::{Markdown, Options};
 
 #[component]
 fn Logger() -> Element {
@@ -19,6 +19,21 @@ fn App() -> Element {
     let mut wikilinks_enabled = use_signal(|| false);
     let mut hardbreaks_enabled = use_signal(|| false);
     let mut debug_enabled = use_signal(|| false);
+
+    let parse_options_default = Options::ENABLE_GFM
+        | Options::ENABLE_MATH
+        | Options::ENABLE_TABLES
+        | Options::ENABLE_TASKLISTS
+        | Options::ENABLE_STRIKETHROUGH
+        | Options::ENABLE_YAML_STYLE_METADATA_BLOCKS;
+
+    let parse_options = use_memo(move || {
+        if wikilinks_enabled() {
+            parse_options_default
+        } else {
+            parse_options_default | Options::ENABLE_WIKILINKS
+        }
+    });
 
     rsx! {
         h1 {"Markdown Editor"},
@@ -55,6 +70,7 @@ fn App() -> Element {
                     src: content,
                     wikilinks: wikilinks_enabled(),
                     hard_line_breaks: hardbreaks_enabled(),
+                    parse_options: parse_options(),
                 },
             }
             div {
