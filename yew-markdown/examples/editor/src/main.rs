@@ -1,14 +1,16 @@
 use yew::prelude::*;
 use yew_markdown::Markdown;
 mod input;
-use input::TextArea;
+use input::{get_value_from_checkbox, TextArea};
 
 struct App {
     content: String,
+    hard_line_breaks: bool,
 }
 
 enum Msg {
     UpdateContent(String),
+    SetHardLineBreaks(bool),
 }
 
 impl Component for App {
@@ -16,6 +18,7 @@ impl Component for App {
     type Properties = ();
     fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
+            Msg::SetHardLineBreaks(b) => self.hard_line_breaks = b,
             Msg::UpdateContent(s) => self.content = s,
         }
         true
@@ -24,11 +27,15 @@ impl Component for App {
     fn create(_ctx: &Context<Self>) -> Self {
         Self {
             content: String::new(),
+            hard_line_breaks: false,
         }
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let oninput = ctx.link().callback(|s| Msg::UpdateContent(s));
+        let oninput_checkbox = ctx
+            .link()
+            .callback(|s: InputEvent| Msg::SetHardLineBreaks(get_value_from_checkbox(s)));
 
         html! {
             <div style={"display: flex; align-items: top;"}>
@@ -37,7 +44,18 @@ impl Component for App {
                     style={"margin: 20px"}
                 />
                 <div>
-                    <Markdown src={self.content.clone()}/>
+                <label for="hard_line_breaks">{"convert soft breaks to hard breaks"}</label>
+                <input
+                    id="hard_line_breaks"
+                    type="checkbox"
+                    oninput={oninput_checkbox}
+                    />
+                </div>
+                <div>
+                    <Markdown
+                        src={self.content.clone()}
+                        hard_line_breaks={self.hard_line_breaks}
+                        />
                 </div>
             </div>
         }

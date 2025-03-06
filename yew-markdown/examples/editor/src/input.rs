@@ -1,5 +1,5 @@
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
-use web_sys::HtmlTextAreaElement;
+use web_sys::{HtmlInputElement, HtmlTextAreaElement};
 use yew::{function_component, prelude::*};
 
 pub fn get_value_from_textarea(e: InputEvent) -> String {
@@ -7,6 +7,13 @@ pub fn get_value_from_textarea(e: InputEvent) -> String {
     let event_target = event.target().unwrap_throw();
     let target: HtmlTextAreaElement = event_target.dyn_into().unwrap_throw();
     target.value()
+}
+
+pub fn get_value_from_checkbox(e: InputEvent) -> bool {
+    let event: Event = e.dyn_into().unwrap_throw();
+    let event_target = event.target().unwrap_throw();
+    let target: HtmlInputElement = event_target.dyn_into().unwrap_throw();
+    target.checked()
 }
 
 #[derive(Properties, PartialEq)]
