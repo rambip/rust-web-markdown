@@ -28,11 +28,11 @@ fn Counter(props: &CounterProps) -> Html {
 
     let increment = {
         let count = count.clone();
-        Callback::from(move |_| count.set(*count - 1))
+        Callback::from(move |_| count.set(*count + 1))
     };
     let decrement = {
         let count = count.clone();
-        Callback::from(move |_| count.set(*count + 1))
+        Callback::from(move |_| count.set(*count - 1))
     };
 
     html! {
