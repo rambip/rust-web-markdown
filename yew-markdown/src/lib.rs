@@ -1,4 +1,4 @@
-use rust_web_markdown::{
+use web_framework_markdown::{
     render_markdown, Context, CowStr, ElementAttributes, HtmlElement, MarkdownProps,
 };
 
@@ -6,13 +6,13 @@ use core::ops::Range;
 
 use std::collections::BTreeMap;
 
-pub use rust_web_markdown::{ComponentCreationError, LinkDescription, Options};
+pub use web_framework_markdown::{ComponentCreationError, LinkDescription, Options};
 
 use yew::prelude::{
     function_component, html, AttrValue, Callback, Html, Properties, UseStateHandle,
 };
 
-pub type MdComponentProps = rust_web_markdown::MdComponentProps<Html>;
+pub type MdComponentProps = web_framework_markdown::MdComponentProps<Html>;
 
 use web_sys::{window, MouseEvent};
 
@@ -291,7 +291,7 @@ impl<'a> Context<'a, 'static> for &'a Props {
     fn render_custom_component(
         self,
         name: &str,
-        input: rust_web_markdown::MdComponentProps<Self::View>,
+        input: MdComponentProps,
     ) -> Result<Self::View, ComponentCreationError> {
         let f = self.components.0.get(name).unwrap();
         f.emit(input)

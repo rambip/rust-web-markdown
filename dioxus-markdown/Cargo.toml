@@ -8,8 +8,8 @@ license = "MIT"
 
 [dependencies]
 dioxus = "0.6.0"
-rust-web-markdown = { path = "../web-markdown/", default-features = false }
+web-framework-markdown = { path = "../web-markdown/", default-features = false }
 
 [features]
-debug = ["rust-web-markdown/debug"]
+debug = ["web-framework-markdown/debug"]
 default = []

@@ -1,12 +1,12 @@
-use rust_web_markdown::{render_markdown, CowStr};
+use web_framework_markdown::{render_markdown, CowStr, MarkdownProps};
 
 use std::collections::BTreeMap;
 
-pub type MdComponentProps = rust_web_markdown::MdComponentProps<Element>;
+pub type MdComponentProps = web_framework_markdown::MdComponentProps<Element>;
 
 use core::ops::Range;
 
-pub use rust_web_markdown::{
+pub use web_framework_markdown::{
     ComponentCreationError, Context, ElementAttributes, HtmlElement, LinkDescription, Options,
 };
 
@@ -313,10 +313,10 @@ impl<'src> Context<'src, 'static> for MdContext {
         })
     }
 
-    fn props(self) -> rust_web_markdown::MarkdownProps {
+    fn props(self) -> MarkdownProps {
         let props = self.0();
 
-        rust_web_markdown::MarkdownProps {
+        MarkdownProps {
             hard_line_breaks: props.hard_line_breaks,
             wikilinks: props.wikilinks,
             parse_options: props.parse_options,
@@ -369,7 +369,7 @@ impl<'src> Context<'src, 'static> for MdContext {
     fn render_custom_component(
         self,
         name: &str,
-        input: rust_web_markdown::MdComponentProps<Self::View>,
+        input: MdComponentProps,
     ) -> Result<Self::View, ComponentCreationError> {
         let f: Callback<_, _> = self.0()
             .components

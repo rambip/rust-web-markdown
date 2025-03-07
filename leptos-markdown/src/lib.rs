@@ -1,10 +1,10 @@
-use rust_web_markdown::{
+use web_framework_markdown::{
     render_markdown, Context, CowStr, ElementAttributes, HtmlElement, MarkdownProps,
 };
 
-pub type MdComponentProps = rust_web_markdown::MdComponentProps<View>;
+pub type MdComponentProps = web_framework_markdown::MdComponentProps<View>;
 
-pub use rust_web_markdown::{ComponentCreationError, LinkDescription, Options};
+pub use web_framework_markdown::{ComponentCreationError, LinkDescription, Options};
 
 use web_sys::MouseEvent;
 
@@ -70,7 +70,7 @@ impl<'a> Context<'a, 'static> for &'a __MdProps {
 
     type MouseEvent = MouseEvent;
 
-    fn props(self) -> rust_web_markdown::MarkdownProps {
+    fn props(self) -> MarkdownProps {
         MarkdownProps {
             hard_line_breaks: self.hard_line_breaks.get(),
             wikilinks: self.wikilinks.get(),
@@ -264,7 +264,7 @@ impl<'a> Context<'a, 'static> for &'a __MdProps {
         self,
         name: &str,
         input: MdComponentProps,
-    ) -> Result<Self::View, rust_web_markdown::ComponentCreationError> {
+    ) -> Result<Self::View, ComponentCreationError> {
         let f = self.components.0.get(name).unwrap();
         f.call(input)
     }
