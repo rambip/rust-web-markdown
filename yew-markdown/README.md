@@ -29,19 +29,15 @@ the example is included in `./examples/showcase`
 Here is an illustration:
 ![](./img/showcase.jpg)
 
-see [here](https://rambip.github.io/yew-markdown/showcase)
+see [here](https://rambip.github.io/rust-web-markdown/showcase)
 
 ## Editor
 Of course, an example of a basic markdown editor is implemented to show what is currently supported
 
-see [here](https://rambip.github.io/yew-markdown/editor)
+see [here](https://rambip.github.io/rust-web-markdown/editor)
 
 ## Interactivity
-see [here](https://rambip.github.io/yew-markdown/onclick)
+see [here](https://rambip.github.io/rust-web-markdown/onclick)
 
 ## Custom Components
-see [here](https://rambip.github.io/yew-markdown/custom_components)
-
-# ROADMAP
-- implement note reference and image reference
-- publish as a crate as soon as it is stable
+see [here](https://rambip.github.io/rust-web-markdown/custom_components)
