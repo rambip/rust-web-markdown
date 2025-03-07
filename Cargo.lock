@@ -767,7 +767,7 @@ dependencies = [
 
 [[package]]
 name = "dioxus-markdown"
-version = "0.1.2"
+version = "0.0.1"
 dependencies = [
  "dioxus",
  "web-framework-markdown",
