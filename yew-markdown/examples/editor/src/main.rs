@@ -6,10 +6,12 @@ use input::{get_value_from_checkbox, TextArea};
 struct App {
     content: String,
     hard_line_breaks: bool,
+    debug_info: Vec<String>,
 }
 
 enum Msg {
     UpdateContent(String),
+    UpdateDebugInfo(Vec<String>),
     SetHardLineBreaks(bool),
 }
 
@@ -20,6 +22,7 @@ impl Component for App {
         match msg {
             Msg::SetHardLineBreaks(b) => self.hard_line_breaks = b,
             Msg::UpdateContent(s) => self.content = s,
+            Msg::UpdateDebugInfo(s) => self.debug_info = s,
         }
         true
     }
@@ -28,6 +31,7 @@ impl Component for App {
         Self {
             content: String::new(),
             hard_line_breaks: false,
+            debug_info: Vec::new(),
         }
     }
 
@@ -36,6 +40,9 @@ impl Component for App {
         let oninput_checkbox = ctx
             .link()
             .callback(|s: InputEvent| Msg::SetHardLineBreaks(get_value_from_checkbox(s)));
+
+        let send_debug_info = ctx.link().callback(|s| Msg::UpdateDebugInfo(s));
+        let debug_info = self.debug_info.iter().map(|x| html! {<li>{x}</li>});
 
         html! {
             <div style={"display: flex; align-items: top;"}>
@@ -55,7 +62,12 @@ impl Component for App {
                     <Markdown
                         src={self.content.clone()}
                         hard_line_breaks={self.hard_line_breaks}
+                        send_debug_info={send_debug_info}
                         />
+                </div>
+                <div>
+                    <h3>{"Syntax tree"}</h3>
+                    {for debug_info}
                 </div>
             </div>
         }
