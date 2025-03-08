@@ -26,8 +26,8 @@ pub mod debug {
 pub struct MdProps {
     src: ReadOnlySignal<String>,
 
-    /// the callback called when a component is clicked.
-    /// if you want to controll what happens when a link is clicked,
+    /// The callback called when a component is clicked.
+    /// If you want to control what happens when a link is clicked,
     /// use [`render_links`][render_links]
     on_click: Option<EventHandler<MarkdownMouseEvent>>,
 

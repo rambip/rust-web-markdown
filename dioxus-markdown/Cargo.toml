@@ -12,4 +12,5 @@ web-framework-markdown = { path = "../web-markdown/", default-features = false }
 
 [features]
 debug = ["web-framework-markdown/debug"]
+maths = ["web-framework-markdown/maths"]
 default = []

@@ -1,5 +1,3 @@
-#![allow(non_snake_case)]
-
 use dioxus::prelude::*;
 
 use dioxus_markdown::*;
@@ -29,6 +27,7 @@ render!{
 ```
 "#;
 
+#[component]
 fn App() -> Element {
     let mut range = use_signal(|| 0..0);
 
