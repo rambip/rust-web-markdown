@@ -1,5 +1,3 @@
-#![allow(non_snake_case)]
-
 use dioxus::prelude::*;
 
 use dioxus_markdown::debug::DEBUG_INFO;
@@ -14,6 +12,7 @@ fn Logger() -> Element {
     }
 }
 
+#[component]
 fn App() -> Element {
     let mut content = use_signal(|| String::from("**bold**"));
     let mut wikilinks_enabled = use_signal(|| false);
