@@ -7,7 +7,7 @@ It supports [commonmark](https://commonmark.org/), and so much more.
 Use it as a git dependency !
 ```toml
 # inside Cargo.toml
-leptos-markdown = {git="https://github.com/rambip/leptos-markdown"}
+leptos-markdown = {git="https://github.com/rambip/rust-web-markdown"}
 ```
 
 # Usage
@@ -21,7 +21,7 @@ use leptos_markdown::Markdown;
 
 {
     ...
-    view!{cx,
+    view!{
         <Markdown src="# Markdown Power !"/>
     }
 }
@@ -31,9 +31,9 @@ use leptos_markdown::Markdown;
 ```rust
 {
     ...
-    let (content, set_content) = create_signal(cx, "# Markdown Power !".to_string());
+    let (content, set_content) = create_signal("# Markdown Power !".to_string());
 
-    view!{cx,
+    view!{
         <Markdown src=content/>
     }
 }
@@ -48,30 +48,24 @@ To build them, just follow the [leptos installation instructions](https://leptos
 
 `./examples/showcase`
 
-You can see the result [here](https://rambip.github.io/leptos-markdown/showcase)
+You can see the result [here](https://rambip.github.io/rust-web-markdown/showcase)
 
 To be fair, this is not the vanilla component, there is a bit of styling added.
 
 ## Editor
 `./examples/editor`
 
-There is a demo of an interactive editor [here](https://rambip.github.io/leptos-markdown/editor)
+There is a demo of an interactive editor [here](https://rambip.github.io/rust-web-markdown/editor)
 
 ## Onclick
 `./examples/onclick/`
 
 Illustrates a cool feature of this crate: `onclick` events for any rendered content
 
-Try it [here](https://rambip.github.io/leptos-markdown/onclick)
+Try it [here](https://rambip.github.io/rust-web-markdown-markdown/onclick)
 
 ## Custom components
 
 This feature is still very experimental.
-But there is an exemple [here](https://rambip.github.io/leptos-markdown/custom_component)
-
-# Comparison
-I already built a similar library using yew [here](https://github.com/rambip/yew-markdown/)
-This project was great to compare the advantages and drawbacks of the two major rust web frameworks !
-
-see [my feedback](./feedback/README.md) for a comparison
+But there is an exemple [here](https://rambip.github.io/rust-web-markdown-markdown/custom_component)
 
