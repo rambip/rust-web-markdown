@@ -3,7 +3,7 @@
 This crate is a work in progress to create libraries to render markdown for the main rust web frameworks:
 
 | Framework | Package | Crate | Link |
-| --------- | ------- | ---- |
+| --------- | ------- | ----- | ---- |
 | [Dioxus](https://dioxuslabs.com/) | `dioxus-markdown` | https://crates.io/crates/dioxus-markdown | [here](./dioxus-markdown) |
 | [Leptos](https://www.leptos.dev/) | `leptos-markdown` | coming soon | [here](./leptos-markdown) |
 | [Yew](https://yew.rs | `yew-markdown` | https://crates.io/crates/yew-markdown | [here](./yews-markdown) |
