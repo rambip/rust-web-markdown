@@ -9,13 +9,11 @@ This crate is a work in progress to create libraries to render markdown for the 
 | [Yew](https://yew.rs) | `yew-markdown` | https://crates.io/crates/yew-markdown | [here](./yews-markdown) |
 
 
-# Usage
-
-TODO
 
 # Examples
 Take a look at the different examples !
-You just need trunk and a web-browser to test them.
+
+The following examples are build using Yew, but they are implemented for all frameworks.
 
 ## Showcase
 the example is included in `./examples/showcase`
