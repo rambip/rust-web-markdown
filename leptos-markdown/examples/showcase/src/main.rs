@@ -50,7 +50,7 @@ Even todo lists:
 
 #[component]
 fn App() -> impl IntoView {
-    view!{
+    view! {
         <Markdown src=MARKDOWN_SOURCE wikilinks=true/>
     }
 }
