@@ -1,0 +1,56 @@
+name: Rust CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main, master]
+
+jobs:
+  check:
+    name: Check compilation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: wasm32-unknown-unknown
+          override: true
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Check if code compiles
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --all-features
+
+  format:
+    name: Check formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          components: rustfmt
+          override: true
+
+      - name: Check code formatting
+        run: |
+          # Run cargo fmt and capture the diff
+          cargo fmt -- --check || {
+            echo "::error::Code formatting issues found. Please run 'cargo fmt' locally."
+            # Show the diff for better feedback
+            cargo fmt -- --check 2>&1 | tee fmt_issues.txt
+            cat fmt_issues.txt
+            exit 1
+          }

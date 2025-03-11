@@ -1,22 +1,19 @@
 # Goal
 
 This crate is a work in progress to create libraries to render markdown for the main rust web frameworks:
-- [dioxus](https://dioxuslabs.com)
-- [leptos](https://www.leptos.dev/)
-- [yew](yew.rs)
 
-For now, these crates are not published no crates.io, but they may be soon !
+| Framework | Package | Crate | Source |
+| --------- | ------- | ----- | ---- |
+| [Dioxus](https://dioxuslabs.com/) | `dioxus-markdown` | https://crates.io/crates/dioxus-markdown | [here](./dioxus-markdown) |
+| [Leptos](https://www.leptos.dev/) | `leptos-markdown` | coming soon | [here](./leptos-markdown) |
+| [Yew](https://yew.rs) | `yew-markdown` | https://crates.io/crates/yew-markdown | [here](./yews-markdown) |
 
-PRs are **very much** appreciated.
 
-
-# Usage
-
-TODO
 
 # Examples
 Take a look at the different examples !
-You just need trunk and a web-browser to test them.
+
+The following examples are build using Yew, but they are implemented for all frameworks.
 
 ## Showcase
 the example is included in `./examples/showcase`
@@ -36,3 +33,7 @@ see [here](https://rambip.github.io/rust-web-markdown/onclick)
 
 ## Custom Components
 see [here](https://rambip.github.io/rust-web-markdown/custom-components)
+
+# Contribute
+
+PRs are **very much** appreciated.

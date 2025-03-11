@@ -1,5 +1,5 @@
-use std::str::FromStr;
 use core::iter::Peekable;
+use std::str::FromStr;
 
 use std::collections::BTreeMap;
 
@@ -7,7 +7,7 @@ use std::collections::BTreeMap;
 /// a custom non-native html element
 /// called inside markdown
 pub struct ComponentCall {
-    pub name: String, 
+    pub name: String,
     pub attributes: BTreeMap<String, String>,
 }
 
@@ -24,19 +24,18 @@ pub enum CustomHtmlTag {
 
 type ParseError = String;
 
-fn parse_attribute_value(stream: &mut Peekable<std::str::Chars>) 
-    -> Result<String, ParseError> {
+fn parse_attribute_value(stream: &mut Peekable<std::str::Chars>) -> Result<String, ParseError> {
     let mut attribute = String::new();
 
     if stream.next() != Some('"') {
-        return Err("please use `\"` to wrap your attribute values".into())
+        return Err("please use `\"` to wrap your attribute values".into());
     }
 
     loop {
         match stream.peek() {
             None => return Err("expected attribute value".into()),
             Some(&'"') => break,
-            _ => attribute.push(stream.next().unwrap())
+            _ => attribute.push(stream.next().unwrap()),
         }
     }
     stream.next();
@@ -44,8 +43,7 @@ fn parse_attribute_value(stream: &mut Peekable<std::str::Chars>)
     Ok(attribute)
 }
 
-fn parse_attribute_name(stream: &mut Peekable<std::str::Chars>) 
-    -> Result<String, ParseError> {
+fn parse_attribute_name(stream: &mut Peekable<std::str::Chars>) -> Result<String, ParseError> {
     let mut name = String::new();
 
     while stream.peek() == Some(&' ') {
@@ -63,8 +61,7 @@ fn parse_attribute_name(stream: &mut Peekable<std::str::Chars>)
     Ok(name)
 }
 
-fn parse_attribute(stream: &mut Peekable<std::str::Chars>) -> 
-    Result<(String, String), ParseError> {
+fn parse_attribute(stream: &mut Peekable<std::str::Chars>) -> Result<(String, String), ParseError> {
     let name = parse_attribute_name(stream)?;
     // equal sign
     stream.next();
@@ -80,20 +77,17 @@ fn parse_attribute(stream: &mut Peekable<std::str::Chars>) ->
 impl FromStr for CustomHtmlTag {
     type Err = String;
 
-
     fn from_str(s: &str) -> Result<CustomHtmlTag, Self::Err> {
-        let mut stream = s.chars()
-            .peekable();
+        let mut stream = s.chars().peekable();
 
         if stream.next() != Some('<') {
-            return Err("expected <".into())
+            return Err("expected <".into());
         }
 
         let is_end = if stream.peek() == Some(&'/') {
             stream.next();
             true
-        }
-        else {
+        } else {
             false
         };
 
@@ -102,7 +96,7 @@ impl FromStr for CustomHtmlTag {
         loop {
             match stream.peek() {
                 Some(&' ') | Some(&'/') | Some(&'>') => break,
-                _ => name.push(stream.next().unwrap())
+                _ => name.push(stream.next().unwrap()),
             }
         }
 
@@ -122,7 +116,7 @@ impl FromStr for CustomHtmlTag {
             return Ok(CustomHtmlTag::Inline(ComponentCall {
                 name,
                 attributes: attributes.into(),
-            }))
+            }));
         }
 
         while stream.peek() == Some(&' ') {
@@ -131,12 +125,8 @@ impl FromStr for CustomHtmlTag {
 
         if is_end {
             Ok(CustomHtmlTag::End(name))
-        }
-        else {
-            Ok(CustomHtmlTag::Start(ComponentCall {
-                name,
-                attributes
-            }))
+        } else {
+            Ok(CustomHtmlTag::Start(ComponentCall { name, attributes }))
         }
     }
 }
@@ -147,44 +137,44 @@ mod test {
     use CustomHtmlTag::*;
 
     #[test]
-    fn parse_start(){
-        let c : CustomHtmlTag = "<a>".parse().unwrap();
-        assert_eq!(c, Start(
-                ComponentCall {
-                    name: "a".into(),
-                    attributes: [].into(),
-                },
-                )
+    fn parse_start() {
+        let c: CustomHtmlTag = "<a>".parse().unwrap();
+        assert_eq!(
+            c,
+            Start(ComponentCall {
+                name: "a".into(),
+                attributes: [].into(),
+            },)
         )
     }
 
     #[test]
-    fn parse_end(){
-        let c : CustomHtmlTag = "</a>".parse().unwrap();
+    fn parse_end() {
+        let c: CustomHtmlTag = "</a>".parse().unwrap();
         assert_eq!(c, End("a".into()))
     }
 
     #[test]
-    fn parse_inline_empty(){
-        let c : CustomHtmlTag = "<a/>".parse().unwrap();
-        assert_eq!(c, Inline(
-                ComponentCall {
-                    name: "a".into(),
-                    attributes: [].into(),
-                },
-                )
+    fn parse_inline_empty() {
+        let c: CustomHtmlTag = "<a/>".parse().unwrap();
+        assert_eq!(
+            c,
+            Inline(ComponentCall {
+                name: "a".into(),
+                attributes: [].into(),
+            },)
         )
     }
 
     #[test]
-    fn parse_inline(){
-        let c : CustomHtmlTag = "<a key=\"val\"/>".parse().unwrap();
-        assert_eq!(c, Inline(
-                ComponentCall {
-                    name: "a".into(),
-                    attributes: BTreeMap::from([("key".into(), "val".into())])
-                },
-                )
+    fn parse_inline() {
+        let c: CustomHtmlTag = "<a key=\"val\"/>".parse().unwrap();
+        assert_eq!(
+            c,
+            Inline(ComponentCall {
+                name: "a".into(),
+                attributes: BTreeMap::from([("key".into(), "val".into())])
+            },)
         )
     }
 }
