@@ -1,12 +1,12 @@
 # Goal
-A simple library to render markdown with dioxus, at runtime.
+A simple library to render markdown with Dioxus, at runtime.
 The best rust crates are involved!
 
 # Usage
-Add rust-web-markdown to your project:
+Add dioxus-markdown to your project:
 ```toml
 # Cargo.toml
-rust-web-markdown = {git="https://github.com/rambip/rust-web-markdown"}
+dioxus-markdown = "0.0.1"
 ```
 
 If you just need to render basic markdown, you can do
