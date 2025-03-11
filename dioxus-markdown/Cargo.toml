@@ -3,6 +3,7 @@ name = "dioxus-markdown"
 version = "0.0.1"
 edition = "2021"
 license = "MIT"
+repository = "https://github.com/rambip/rust-web-markdown"
 description = "A dynamic markdown component for the dioxus framework"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -13,4 +14,5 @@ web-framework-markdown = { version = "0.0.1", path = "../web-markdown/", default
 
 [features]
 debug = ["web-framework-markdown/debug"]
+maths = ["web-framework-markdown/maths"]
 default = []

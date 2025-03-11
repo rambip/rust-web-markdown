@@ -1,4 +1,3 @@
-#![allow(non_snake_case)]
 use dioxus::prelude::*;
 
 use dioxus_markdown::*;
@@ -49,6 +48,7 @@ fn ColorBox(children: Element) -> Element {
 }
 
 // create a component that renders a div with the text "Hello, world!"
+#[component]
 fn App() -> Element {
     let mut components = CustomComponents::new();
 
