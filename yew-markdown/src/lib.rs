@@ -1,5 +1,6 @@
 use web_framework_markdown::{
-    render_markdown, Context, CowStr, ElementAttributes, HtmlElement, MarkdownProps,
+    markdown_component, Context, CowStr, ElementAttributes, HtmlElement, MarkdownProps, StyleLink,
+    MATH_STYLE_SHEET_LINK,
 };
 
 use core::ops::Range;
@@ -212,19 +213,6 @@ impl<'a> Context<'a, 'static> for &'a Props {
         html! {text}
     }
 
-    fn mount_dynamic_link(self, rel: &str, href: &str, integrity: &str, crossorigin: &str) {
-        let document = window().unwrap().document().unwrap();
-
-        let link = document.create_element("link").unwrap();
-
-        link.set_attribute("rel", rel).unwrap();
-        link.set_attribute("href", href).unwrap();
-        link.set_attribute("integrity", integrity).unwrap();
-        link.set_attribute("crossorigin", crossorigin).unwrap();
-
-        document.head().unwrap().append_child(&link).unwrap();
-    }
-
     fn el_input_checkbox(
         self,
         checked: bool,
@@ -332,5 +320,22 @@ pub struct Props {
 
 #[function_component]
 pub fn Markdown(props: &Props) -> Html {
-    render_markdown(props, &props.src)
+    let document = window().unwrap().document().unwrap();
+
+    let link = document.create_element("link").unwrap();
+
+    let StyleLink {
+        rel,
+        href,
+        integrity,
+        crossorigin,
+    } = MATH_STYLE_SHEET_LINK;
+    link.set_attribute("rel", rel).unwrap();
+    link.set_attribute("href", href).unwrap();
+    link.set_attribute("integrity", integrity).unwrap();
+    link.set_attribute("crossorigin", crossorigin).unwrap();
+
+    document.head().unwrap().append_child(&link).unwrap();
+
+    markdown_component(props, &props.src)
 }

@@ -46,20 +46,6 @@ impl HtmlError {
     }
 }
 
-impl ToString for HtmlError {
-    fn to_string(&self) -> String {
-        match self {
-            HtmlError::Math => "invalid math".to_string(),
-            HtmlError::NotImplemented(s) => format!("`{s}`: not implemented"),
-            HtmlError::CustomComponent { name, msg } => {
-                format!("Custom component `{name}` failed: `{msg}`")
-            }
-            HtmlError::Syntax(s) => format!("syntax error: {s}"),
-            HtmlError::Link(s) => format!("invalid link: {s}"),
-        }
-    }
-}
-
 /// `highlight_code(content, ss, ts)` render the content `content`
 /// with syntax highlighting
 fn highlight_code(theme_name: Option<&str>, content: &str, kind: &CodeBlockKind) -> Option<String> {
@@ -150,7 +136,10 @@ fn render_maths<'a, 'callback, F: Context<'a, 'callback>>(
     _display_mode: MathMode,
     _range: Range<usize>,
 ) -> Result<F::View, HtmlError> {
-    Err(HtmlError::Math)
+    Err(HtmlError::UnAvailable(
+        "Math was not enabled during compilation of the library. Please unable the `maths` feature"
+            .into(),
+    ))
 }
 
 /// `align_string(align)` gives the css string

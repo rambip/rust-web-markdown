@@ -1,5 +1,6 @@
 use web_framework_markdown::{
-    render_markdown, Context, CowStr, ElementAttributes, HtmlElement, MarkdownProps,
+    markdown_component, Context, CowStr, ElementAttributes, HtmlElement, MarkdownProps, StyleLink,
+    MATH_STYLE_SHEET_LINK,
 };
 
 pub type MdComponentProps = web_framework_markdown::MdComponentProps<View>;
@@ -184,19 +185,6 @@ impl<'a> Context<'a, 'static> for &'a __MdProps {
         text.to_string().into_view()
     }
 
-    fn mount_dynamic_link(self, rel: &str, href: &str, integrity: &str, crossorigin: &str) {
-        let document = document();
-
-        let link = document.create_element("link").unwrap();
-
-        link.set_attribute("rel", rel).unwrap();
-        link.set_attribute("href", href).unwrap();
-        link.set_attribute("integrity", integrity).unwrap();
-        link.set_attribute("crossorigin", crossorigin).unwrap();
-
-        document.head().unwrap().append_child(&link).unwrap();
-    }
-
     fn el_input_checkbox(
         self,
         checked: bool,
@@ -315,5 +303,22 @@ pub fn __Md(
 
 #[allow(non_snake_case)]
 pub fn Markdown(props: __MdProps) -> impl IntoView {
-    move || render_markdown(&props, &props.src.get())
+    let StyleLink {
+        rel,
+        href,
+        integrity,
+        crossorigin,
+    } = MATH_STYLE_SHEET_LINK;
+
+    let document = document();
+
+    let link = document.create_element("link").unwrap();
+
+    link.set_attribute("rel", rel).unwrap();
+    link.set_attribute("href", href).unwrap();
+    link.set_attribute("integrity", integrity).unwrap();
+    link.set_attribute("crossorigin", crossorigin).unwrap();
+
+    document.head().unwrap().append_child(&link).unwrap();
+    move || markdown_component(&props, &props.src.get())
 }

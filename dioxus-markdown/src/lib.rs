@@ -1,4 +1,4 @@
-use web_framework_markdown::{render_markdown, CowStr, MarkdownProps};
+use web_framework_markdown::{markdown_component, CowStr, MarkdownProps, MATH_STYLE_SHEET_LINK};
 
 use std::collections::BTreeMap;
 
@@ -263,35 +263,6 @@ impl<'src> Context<'src, 'static> for MdContext {
         }
     }
 
-    fn mount_dynamic_link(self, _rel: &str, _href: &str, _integrity: &str, _crossorigin: &str) {
-        // let create_eval = use_eval(self.0);
-
-        // let eval = create_eval(
-        //     r#"
-        //     // https://stackoverflow.com/a/18510577
-        //     let rel = await dioxus.recv();
-        //     let href = await dioxus.recv();
-        //     let integrity = await dioxus.recv();
-        //     let crossorigin = await dioxus.recv();
-        //     var newstyle = document.createElement("link"); // Create a new link Tag
-
-        //     newstyle.setAttribute("rel", rel);
-        //     newstyle.setAttribute("type", "text/css");
-        //     newstyle.setAttribute("href", href);
-        //     newstyle.setAttribute("crossorigin", crossorigin);
-        //     newstyle.setAttribute("integrity", integrity);
-        //     document.getElementsByTagName("head")[0].appendChild(newstyle);
-        //     "#,
-        // )
-        // .unwrap();
-
-        // // You can send messages to JavaScript with the send method
-        // eval.send(rel.into()).unwrap();
-        // eval.send(href.into()).unwrap();
-        // eval.send(integrity.into()).unwrap();
-        // eval.send(crossorigin.into()).unwrap();
-    }
-
     fn el_input_checkbox(
         self,
         checked: bool,
@@ -385,5 +356,11 @@ impl<'src> Context<'src, 'static> for MdContext {
 pub fn Markdown(props: MdProps) -> Element {
     let src: String = props.src.to_string();
     let signal: Signal<MdProps> = Signal::new(props);
-    render_markdown(MdContext(signal.into()), &src)
+    let child = markdown_component(MdContext(signal.into()), &src);
+    rsx! {
+        document::Style {
+            href: MATH_STYLE_SHEET_LINK.href,
+        }
+        {child}
+    }
 }

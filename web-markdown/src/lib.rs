@@ -45,7 +45,21 @@ pub enum HtmlElement {
     Code,
 }
 
-pub trait Context<'a, 'callback>: Copy + 'a
+pub struct StyleLink {
+    pub rel: &'static str,
+    pub href: &'static str,
+    pub integrity: &'static str,
+    pub crossorigin: &'static str,
+}
+
+pub const MATH_STYLE_SHEET_LINK: StyleLink = StyleLink {
+    rel: "stylesheet",
+    href: "https://cdn.jsdelivr.net/npm/katex@0.16.7/dist/katex.min.css",
+    integrity: "sha384-3UiQGuEI4TTMaFmGIZumfRPtfKQ3trwQE2JgosJxCnGmQpL/lJdjpcHkaaFwHlcI",
+    crossorigin: "anonymous",
+};
+
+pub trait Context<'a, 'callback>: 'a + Copy
 where
     'callback: 'a,
 {
@@ -125,9 +139,6 @@ where
         checked: bool,
         attributes: ElementAttributes<Self::Handler<Self::MouseEvent>>,
     ) -> Self::View;
-
-    /// add a styleshit to the markdown component
-    fn mount_dynamic_link(self, rel: &str, href: &str, integrity: &str, crossorigin: &str);
 
     fn has_custom_component(self, name: &str) -> bool;
     fn render_custom_component(
@@ -210,7 +221,23 @@ pub enum HtmlError {
     Link(String),
     Syntax(String),
     CustomComponent { name: String, msg: String },
+    UnAvailable(String),
     Math,
+}
+
+impl ToString for HtmlError {
+    fn to_string(&self) -> String {
+        match self {
+            HtmlError::Math => "invalid math".to_string(),
+            HtmlError::NotImplemented(s) => format!("`{s}`: not implemented"),
+            HtmlError::CustomComponent { name, msg } => {
+                format!("Custom component `{name}` failed: `{msg}`")
+            }
+            HtmlError::Syntax(s) => format!("syntax error: {s}"),
+            HtmlError::Link(s) => format!("invalid link: {s}"),
+            HtmlError::UnAvailable(s) => s.to_string(),
+        }
+    }
 }
 
 #[derive(PartialEq)]
@@ -297,7 +324,7 @@ pub struct MarkdownProps {
     pub theme: Option<&'static str>,
 }
 
-pub fn render_markdown<'a, 'callback, F: Context<'a, 'callback>>(
+pub fn markdown_component<'a, 'callback, F: Context<'a, 'callback>>(
     cx: F,
     source: &'a str,
 ) -> F::View {
@@ -328,13 +355,6 @@ pub fn render_markdown<'a, 'callback, F: Context<'a, 'callback>>(
     }
 
     let elements = Renderer::new(cx, &mut stream.into_iter()).collect::<Vec<_>>();
-
-    cx.mount_dynamic_link(
-        "stylesheet",
-        "https://cdn.jsdelivr.net/npm/katex@0.16.7/dist/katex.min.css",
-        "sha384-3UiQGuEI4TTMaFmGIZumfRPtfKQ3trwQE2JgosJxCnGmQpL/lJdjpcHkaaFwHlcI",
-        "anonymous",
-    );
 
     cx.el_fragment(elements)
 }
