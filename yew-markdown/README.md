@@ -6,7 +6,7 @@ The best rust crates are involved !
 Add yew-markdown to your project:
 ```toml
 # Cargo.toml
-yew-markdown = {git="https://github.com/rambip/yew-markdown"}
+yew-markdown = "0.0.1"
 ```
 
 If you just need to render basic markdown, you can do
