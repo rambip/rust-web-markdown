@@ -22,7 +22,11 @@ impl Component for App {
         match msg {
             Msg::SetHardLineBreaks(b) => self.hard_line_breaks = b,
             Msg::UpdateContent(s) => self.content = s,
-            Msg::UpdateDebugInfo(s) => self.debug_info = s,
+            Msg::UpdateDebugInfo(s) => {
+                let need_render = self.debug_info != s;
+                self.debug_info = s;
+                return need_render;
+            }
         }
         true
     }
