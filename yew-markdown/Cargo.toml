@@ -14,9 +14,10 @@ wasm-bindgen = "0.2"
 wasm-logger = "0.2"
 log = "0.4"
 
-web-framework-markdown = { version = "0.0.1", path = "../web-markdown/", default-features = false }
+web-framework-markdown = { version = "0.0.1", path = "../web-markdown/" }
 web-sys = { version = "0.3", features = [] }
 
 [features]
-default = []
+default = ["maths"]
 debug = ["web-framework-markdown/debug"]
+maths = ["web-framework-markdown/maths"]

@@ -14,5 +14,6 @@ web-framework-markdown = { path = "../web-markdown/", default-features = false }
 wasm-bindgen = "0.2.93"
 
 [features]
-default = []
+default = ["maths"]
 debug = ["web-framework-markdown/debug"]
+maths = ["web-framework-markdown/maths"]
