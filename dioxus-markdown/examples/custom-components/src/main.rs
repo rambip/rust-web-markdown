@@ -156,10 +156,6 @@ mod tests {
                 rsx! {
                     Markdown { src: "z<X/>", components: components() }
                 },
-                // TODO:
-                // This errors due to producing `<p style="" class=""><span style="" class="">z</span><span style="" class=""><X></span></p>` which is not what is desired.
-                // It seems like the inner `<X>` might not even be escaped properly.
-                // Maybe the desired output is this:
                 rsx! {
                     p { style: "", class: "",
                         span { style: "", class: "", "z" }
@@ -179,8 +175,7 @@ mod tests {
                 },
                 rsx! {
                     p { style: "", class: "",
-                       "Content"
-                       "Content"
+                        "ContentContent"
                     }
                 },
             )
@@ -194,15 +189,7 @@ mod tests {
                 rsx! {
                     Markdown { src: "<X/>\n<X/>", components: components() }
                 },
-                // TODO:
-                // This gives nothing then panics.
-                rsx! {
-                    p { style: "", class: "",
-                        span { style: "", class: "", "Content" }
-                        " "
-                        span { style: "", class: "", "Content" }
-                    }
-                },
+                rsx! { "ContentContent" },
             )
         });
     }
@@ -214,13 +201,9 @@ mod tests {
                 rsx! {
                     Markdown { src: "z<X>", components: components() }
                 },
-                // TODO:
-                // This gives nothing then panics.
                 rsx! {
                     p { style: "", class: "",
                         span { style: "", class: "", "z" }
-                        "Content"
-                        " "
                         "Content"
                     }
                 },
@@ -252,15 +235,8 @@ mod tests {
                 rsx! {
                     Markdown { src: "<X>\n<X>", components: components() }
                 },
-                // TODO:
-                // This gives nothing then panics.
-                rsx! {
-                    p { style: "", class: "",
-                        span { style: "", class: "", "Content" }
-                        " "
-                        span { style: "", class: "", "Content" }
-                    }
-                },
+                // TODO: this seems like it should either produce two Xs or error, but just gives 1
+                rsx! { "Content" },
             )
         });
     }

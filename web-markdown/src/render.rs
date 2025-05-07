@@ -226,7 +226,7 @@ where
             InlineHtml(s) => {
                 self.html(&s, range)
             }
-            Html(_) => panic!("html outside html block"),
+            Html(raw_html) => self.html(&raw_html, range),
             FootnoteReference(_) => Err(HtmlError::not_implemented("footnotes refs")),
             SoftBreak => Ok(self.next()?),
             HardBreak => Ok(self.cx.el_br()),
@@ -409,20 +409,14 @@ where
             .next()
             .expect("this event should be the closing tag")
             .0;
-        assert!(end_tag == &Event::End(end));
+        assert_eq!(end_tag, &Event::End(end));
     }
 
     fn render_tag(&mut self, tag: Tag<'a>, range: Range<usize>) -> Result<F::View, HtmlError> {
         let mut cx = self.cx;
         Ok(match tag.clone() {
             Tag::HtmlBlock => {
-                let raw_html = match self.stream.next() {
-                    Some((Event::Html(s), _)) => s.to_string(),
-                    None => panic!("empty html"),
-                    _ => panic!("expected html event, got something else"),
-                };
-                self.assert_closing_tag(TagEnd::HtmlBlock);
-                self.html(&raw_html, range)?
+                self.children(tag)
             }
             Tag::Paragraph => cx.el(Paragraph, self.children(tag)),
             Tag::Heading { level, .. } => cx.el(Heading(level as u8), self.children(tag)),
