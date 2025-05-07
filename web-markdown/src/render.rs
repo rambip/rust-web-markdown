@@ -185,7 +185,7 @@ where
 fn can_be_custom_component(raw_html: &str) -> bool {
     let chars: Vec<_> = raw_html.trim().chars().collect();
     let len = chars.len();
-    if len == 0 {
+    if len < 3 {
         return false;
     };
     let (fst, middle, last) = (chars[0], &chars[1..len - 1], chars[len - 1]);
