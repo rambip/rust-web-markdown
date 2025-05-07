@@ -178,10 +178,13 @@ where
     current_component: Option<String>,
 }
 
-/// returns true if `raw_html`:
+/// Returns true if `raw_html`:
 /// - starts with '<'
 /// - ends with '>'
-/// - does not have any '<' or '>' in between
+/// - does not have any '<' or '>' in between.
+/// 
+/// TODO:
+/// An string attribute can a ">" character.
 fn can_be_custom_component(raw_html: &str) -> bool {
     let chars: Vec<_> = raw_html.trim().chars().collect();
     let len = chars.len();
@@ -221,11 +224,7 @@ where
             Text(s) => Ok(cx.render_text(s, range)),
             Code(s) => Ok(cx.render_code(s, range)),
             InlineHtml(s) => {
-                let attributes = ElementAttributes {
-                    on_click: Some(self.cx.make_md_handler(range, false)),
-                    ..ElementAttributes::default()
-                };
-                Ok(self.cx.el_span_with_inner_html(s.to_string(), attributes))
+                self.html(&s, range)
             }
             Html(_) => panic!("html outside html block"),
             FootnoteReference(_) => Err(HtmlError::not_implemented("footnotes refs")),
@@ -271,12 +270,14 @@ where
         }
     }
 
-    /// try to render `raw_html` as a custom component.
-    /// - if it looks like `<Component/>` and Component is registered,
-    ///     it will render the corresponding component
-    /// - it it looks like `<Component>`, and Component is registered,
-    /// it will extract markdown until it finds `<Component/>`
-    /// In any other cases, it will render the strinng as raw html.
+    /// Try to render `raw_html` as a custom component.
+    /// - If it looks like `<Component/>` and Component is registered,
+    ///     render the corresponding component.
+    /// - If it looks like `<Component>`, and Component is registered,
+    ///     extract markdown `<Component/>` is found.
+    /// In any other cases, render the string as raw html.
+    /// 
+    /// TODO: document (and fix?) how this behaves if given an open tag and not a closing one.
     fn html(&mut self, raw_html: &str, _range: Range<usize>) -> Result<F::View, HtmlError> {
         // TODO: refactor
 
@@ -318,7 +319,7 @@ where
         }
     }
 
-    /// renders a custom component with childrens
+    /// Renders a custom component with children.
     fn custom_component(&mut self, description: ComponentCall) -> Result<F::View, HtmlError> {
         let name: &str = &description.name;
         if !self.cx.has_custom_component(name) {
@@ -350,7 +351,7 @@ where
         }
     }
 
-    /// renders a custom component without childrens
+    /// Renders a custom component without children.
     fn custom_component_inline(
         &mut self,
         description: ComponentCall,
