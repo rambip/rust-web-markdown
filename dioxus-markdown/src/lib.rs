@@ -210,12 +210,10 @@ impl<'src> Context<'src, 'static> for MdContext {
         };
         rsx! {
             span {
+                dangerous_inner_html: "{inner_html}",
                 style: "{style}",
                 class: "{class}",
-                onclick: onclick,
-                // TODO: some sanitized subset of html could be supported here, or perhaps all of it behind an opt in.
-                // For now protect from the danger of `dangerous_inner_html` by just not supporting any, and outputting the text as is:
-                "{inner_html}"
+                onclick: onclick
             }
         }
     }
