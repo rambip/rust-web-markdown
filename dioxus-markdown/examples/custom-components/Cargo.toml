@@ -8,3 +8,8 @@ edition = "2021"
 [dependencies]
 dioxus = "0.6"
 dioxus-markdown = { path = "../../" }
+
+
+[dev-dependencies]
+pretty_assertions = "1.4.1"
+dioxus-ssr = "0.6.2"
