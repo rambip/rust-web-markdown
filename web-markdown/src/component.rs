@@ -74,14 +74,25 @@ fn parse_attribute(stream: &mut Peekable<std::str::Chars>) -> Result<(String, St
     Ok((name, attribute))
 }
 
+#[derive(Debug)]
+pub struct CustomHtmlTagError {
+    /// The name, if one was parsed before erroring.
+    pub name: Option<String>,
+    /// THe error message.
+    pub message: String,
+}
+
 impl FromStr for CustomHtmlTag {
-    type Err = String;
+    type Err = CustomHtmlTagError;
 
     fn from_str(s: &str) -> Result<CustomHtmlTag, Self::Err> {
         let mut stream = s.chars().peekable();
 
         if stream.next() != Some('<') {
-            return Err("expected <".into());
+            return Err(CustomHtmlTagError {
+                name: None,
+                message: "expected <".into(),
+            });
         }
 
         let is_end = if stream.peek() == Some(&'/') {
@@ -100,14 +111,27 @@ impl FromStr for CustomHtmlTag {
             }
         }
 
+        let err = {
+            let name = name.clone();
+            move |message| -> Result<CustomHtmlTag, Self::Err> {
+                Err(CustomHtmlTagError {
+                    name: Some(name.clone()),
+                    message,
+                })
+            }
+        };
+
         let mut attributes = BTreeMap::new();
         loop {
             match stream.peek() {
-                None => return Err("expected end of tag".into()),
+                None => return err("expected end of tag".into()),
                 Some(&'>') | Some(&'/') => break,
                 _ => {
-                    let (name, value) = parse_attribute(&mut stream)?;
-                    attributes.insert(name, value);
+                    let parsed = parse_attribute(&mut stream);
+                    match parsed {
+                        Ok((name, value)) => attributes.insert(name, value),
+                        Err(message) => return err(message),
+                    };
                 }
             }
         }
@@ -176,5 +200,21 @@ mod test {
                 attributes: BTreeMap::from([("key".into(), "val".into())])
             },)
         )
+    }
+
+    #[test]
+    fn parse_error() {
+        let c: Result<CustomHtmlTag, CustomHtmlTagError> = "<a x>".parse();
+        match c {
+            Ok(_) => panic!(),
+            Err(CustomHtmlTagError {
+                name: Some(name),
+                message: _
+            }) => assert_eq!(name, "a"),
+            Err(CustomHtmlTagError {
+                name: None,
+                message: _
+            }) => panic!(),
+        }
     }
 }
