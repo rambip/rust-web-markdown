@@ -229,7 +229,7 @@ where
             }
             Html(_) => panic!("html outside html block"),
             FootnoteReference(_) => Err(HtmlError::not_implemented("footnotes refs")),
-            SoftBreak => Ok(self.next()?),
+            SoftBreak => Ok(cx.el_text(" ".into())),
             HardBreak => Ok(self.cx.el_br()),
             Rule => Ok(cx.render_rule(range)),
             TaskListMarker(m) => Ok(cx.render_tasklist_marker(m, range)),
