@@ -251,9 +251,10 @@ mod tests {
                 },
                 rsx! {
                     p { style: "", class: "",
-                        span { style: "", class: "",
-                            "For some values of X, Y, and Z, assume X<Y and Y>Z"
-                        }
+                        span { style: "", class: "", "For some values of X, Y, and Z, assume X" }
+                        span { style: "", class: "", "<Y and Y>" }
+                        span { style: "", class: "", "Z" }
+                        
                     }
                 },
             )
