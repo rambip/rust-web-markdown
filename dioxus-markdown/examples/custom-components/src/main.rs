@@ -125,10 +125,25 @@ mod tests {
         test_hook_simple(|| {
             assert_rsx_eq(
                 rsx! {
-                    Markdown { src: "<X>", components: components() }
+                    Markdown { src: "<X/>", components: components() }
                 },
                 // TODO: it seems a bit odd that Markdown wraps text in a `p` tag and a span, but doesn't do so when its just a custom component.
                 // TO be more consistent with the below case, maybe everything should always be wrapped in a `p`?
+                rsx! { "Content" },
+            )
+        });
+    }
+
+
+    #[test]
+    fn custom_non_closing() {
+        test_hook_simple(|| {
+            assert_rsx_eq(
+                rsx! {
+                    Markdown { src: "<X>", components: components() }
+                },
+                // TODO: A non self closing tag behaves the same as a self closing on when using a custom component.
+                // It's not clear what syntaxes are supposed to be allowed for custom components (TODO: this should be documented somewhere).
                 rsx! { "Content" },
             )
         });
@@ -139,7 +154,7 @@ mod tests {
         test_hook_simple(|| {
             assert_rsx_eq(
                 rsx! {
-                    Markdown { src: "z<X>", components: components() }
+                    Markdown { src: "z<X/>", components: components() }
                 },
                 // TODO:
                 // This errors due to producing `<p style="" class=""><span style="" class="">z</span><span style="" class=""><X></span></p>` which is not what is desired.
@@ -148,8 +163,7 @@ mod tests {
                 rsx! {
                     p { style: "", class: "",
                         span { style: "", class: "", "z" }
-                        // If this is the desired output, its really odd the above test with just a custom component isn't wrapped in `p` and a `span`.
-                        span { style: "", class: "", "Content" }
+                        "Content"
                     }
                 },
             )
@@ -161,16 +175,12 @@ mod tests {
         test_hook_simple(|| {
             assert_rsx_eq(
                 rsx! {
-                    Markdown { src: "<X><X>", components: components() }
+                    Markdown { src: "<X/><X/>", components: components() }
                 },
-                // TODO:
-                // This errors due to producing `<p style="" class=""><span style="" class="">z</span><span style="" class=""><X></span></p>` which is not what is desired.
-                // It seems like the inner `<X>` might not even be escaped properly.
-                // Maybe the desired output is this:
                 rsx! {
                     p { style: "", class: "",
-                        span { style: "", class: "", "Content" }
-                        span { style: "", class: "", "Content" }
+                       "Content"
+                       "Content"
                     }
                 },
             )
@@ -182,10 +192,68 @@ mod tests {
         test_hook_simple(|| {
             assert_rsx_eq(
                 rsx! {
+                    Markdown { src: "<X/>\n<X/>", components: components() }
+                },
+                // TODO:
+                // This gives nothing then panics.
+                rsx! {
+                    p { style: "", class: "",
+                        span { style: "", class: "", "Content" }
+                        " "
+                        span { style: "", class: "", "Content" }
+                    }
+                },
+            )
+        });
+    }
+
+    #[test]
+    fn tag_plus_text() {
+        test_hook_simple(|| {
+            assert_rsx_eq(
+                rsx! {
+                    Markdown { src: "z<X>", components: components() }
+                },
+                // TODO:
+                // This gives nothing then panics.
+                rsx! {
+                    p { style: "", class: "",
+                        span { style: "", class: "", "z" }
+                        "Content"
+                        " "
+                        "Content"
+                    }
+                },
+            )
+        });
+    }
+
+    #[test]
+    fn tag_plus_tag() {
+        test_hook_simple(|| {
+            assert_rsx_eq(
+                rsx! {
+                    Markdown { src: "<X><X>", components: components() }
+                },
+                // TODO: this seems like it should either produce two Xs or error, but just gives 1
+                rsx! {
+                    p { style: "", class: "",
+                        "Content"
+                    }
+                },
+            )
+        });
+    }
+
+    #[test]
+    fn tag_line_tag() {
+        test_hook_simple(|| {
+            assert_rsx_eq(
+                rsx! {
                     Markdown { src: "<X>\n<X>", components: components() }
                 },
                 // TODO:
-                // This gives nothing, when it should give both components with a space in between.
+                // This gives nothing then panics.
                 rsx! {
                     p { style: "", class: "",
                         span { style: "", class: "", "Content" }
