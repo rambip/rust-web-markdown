@@ -178,14 +178,17 @@ where
     current_component: Option<String>,
 }
 
-/// returns true if `raw_html`:
+/// Returns true if `raw_html`:
 /// - starts with '<'
 /// - ends with '>'
-/// - does not have any '<' or '>' in between
+/// - does not have any '<' or '>' in between.
+///
+/// TODO:
+/// An string attribute can a ">" character.
 fn can_be_custom_component(raw_html: &str) -> bool {
     let chars: Vec<_> = raw_html.trim().chars().collect();
     let len = chars.len();
-    if len == 0 {
+    if len < 3 {
         return false;
     };
     let (fst, middle, last) = (chars[0], &chars[1..len - 1], chars[len - 1]);
@@ -220,16 +223,10 @@ where
             }
             Text(s) => Ok(cx.render_text(s, range)),
             Code(s) => Ok(cx.render_code(s, range)),
-            InlineHtml(s) => {
-                let attributes = ElementAttributes {
-                    on_click: Some(self.cx.make_md_handler(range, false)),
-                    ..ElementAttributes::default()
-                };
-                Ok(self.cx.el_span_with_inner_html(s.to_string(), attributes))
-            }
-            Html(_) => panic!("html outside html block"),
+            InlineHtml(s) => self.html(&s, range),
+            Html(raw_html) => self.html(&raw_html, range),
             FootnoteReference(_) => Err(HtmlError::not_implemented("footnotes refs")),
-            SoftBreak => Ok(self.next()?),
+            SoftBreak => Ok(cx.el_text(" ".into())),
             HardBreak => Ok(self.cx.el_br()),
             Rule => Ok(cx.render_rule(range)),
             TaskListMarker(m) => Ok(cx.render_tasklist_marker(m, range)),
@@ -271,12 +268,14 @@ where
         }
     }
 
-    /// try to render `raw_html` as a custom component.
-    /// - if it looks like `<Component/>` and Component is registered,
-    ///     it will render the corresponding component
-    /// - it it looks like `<Component>`, and Component is registered,
-    /// it will extract markdown until it finds `<Component/>`
-    /// In any other cases, it will render the strinng as raw html.
+    /// Try to render `raw_html` as a custom component.
+    /// - If it looks like `<Component/>` and Component is registered,
+    ///     render the corresponding component.
+    /// - If it looks like `<Component>`, and Component is registered,
+    ///     extract markdown `<Component/>` is found.
+    /// In any other cases, render the string as raw html.
+    ///
+    /// TODO: document (and fix?) how this behaves if given an open tag and not a closing one.
     fn html(&mut self, raw_html: &str, _range: Range<usize>) -> Result<F::View, HtmlError> {
         // TODO: refactor
 
@@ -318,7 +317,7 @@ where
         }
     }
 
-    /// renders a custom component with childrens
+    /// Renders a custom component with children.
     fn custom_component(&mut self, description: ComponentCall) -> Result<F::View, HtmlError> {
         let name: &str = &description.name;
         if !self.cx.has_custom_component(name) {
@@ -350,7 +349,7 @@ where
         }
     }
 
-    /// renders a custom component without childrens
+    /// Renders a custom component without children.
     fn custom_component_inline(
         &mut self,
         description: ComponentCall,
@@ -408,21 +407,13 @@ where
             .next()
             .expect("this event should be the closing tag")
             .0;
-        assert!(end_tag == &Event::End(end));
+        assert_eq!(end_tag, &Event::End(end));
     }
 
     fn render_tag(&mut self, tag: Tag<'a>, range: Range<usize>) -> Result<F::View, HtmlError> {
         let mut cx = self.cx;
         Ok(match tag.clone() {
-            Tag::HtmlBlock => {
-                let raw_html = match self.stream.next() {
-                    Some((Event::Html(s), _)) => s.to_string(),
-                    None => panic!("empty html"),
-                    _ => panic!("expected html event, got something else"),
-                };
-                self.assert_closing_tag(TagEnd::HtmlBlock);
-                self.html(&raw_html, range)?
-            }
+            Tag::HtmlBlock => self.children(tag),
             Tag::Paragraph => cx.el(Paragraph, self.children(tag)),
             Tag::Heading { level, .. } => cx.el(Heading(level as u8), self.children(tag)),
             Tag::BlockQuote(_) => cx.el(BlockQuote, self.children(tag)),

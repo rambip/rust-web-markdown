@@ -13,11 +13,16 @@ web-sys = { version = "0.3.61", features = ["MouseEvent"] }
 syntect = { version = "5.0.0", default-features = false, features = [
     "default-fancy",
 ] }
+lazy_static = "1.4.0"
+pulldown-cmark = "0.13.0"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
 katex = { version = "0.4", default-features = false, features = [
     "wasm-js",
 ], optional = true }
-lazy_static = "1.4.0"
-pulldown-cmark = "0.13.0"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+katex = { version = "0.4", optional = true }
 
 [features]
 default = ["maths"]
