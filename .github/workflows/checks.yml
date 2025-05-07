@@ -30,6 +30,8 @@ jobs:
           command: check
           args: --all-features
 
+  # TODO: Add job that runs unit tests with cargo test.
+
   format:
     name: Check formatting
     runs-on: ubuntu-latest
