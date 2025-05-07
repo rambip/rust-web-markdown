@@ -209,11 +209,11 @@ mod test {
             Ok(_) => panic!(),
             Err(CustomHtmlTagError {
                 name: Some(name),
-                message: _
+                message: _,
             }) => assert_eq!(name, "a"),
             Err(CustomHtmlTagError {
                 name: None,
-                message: _
+                message: _,
             }) => panic!(),
         }
     }
