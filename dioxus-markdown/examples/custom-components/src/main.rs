@@ -134,7 +134,6 @@ mod tests {
         });
     }
 
-
     #[test]
     fn custom_non_closing() {
         test_hook_simple(|| {

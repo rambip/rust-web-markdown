@@ -182,7 +182,7 @@ where
 /// - starts with '<'
 /// - ends with '>'
 /// - does not have any '<' or '>' in between.
-/// 
+///
 /// TODO:
 /// An string attribute can a ">" character.
 fn can_be_custom_component(raw_html: &str) -> bool {
@@ -223,9 +223,7 @@ where
             }
             Text(s) => Ok(cx.render_text(s, range)),
             Code(s) => Ok(cx.render_code(s, range)),
-            InlineHtml(s) => {
-                self.html(&s, range)
-            }
+            InlineHtml(s) => self.html(&s, range),
             Html(raw_html) => self.html(&raw_html, range),
             FootnoteReference(_) => Err(HtmlError::not_implemented("footnotes refs")),
             SoftBreak => Ok(self.next()?),
@@ -276,7 +274,7 @@ where
     /// - If it looks like `<Component>`, and Component is registered,
     ///     extract markdown `<Component/>` is found.
     /// In any other cases, render the string as raw html.
-    /// 
+    ///
     /// TODO: document (and fix?) how this behaves if given an open tag and not a closing one.
     fn html(&mut self, raw_html: &str, _range: Range<usize>) -> Result<F::View, HtmlError> {
         // TODO: refactor
@@ -415,9 +413,7 @@ where
     fn render_tag(&mut self, tag: Tag<'a>, range: Range<usize>) -> Result<F::View, HtmlError> {
         let mut cx = self.cx;
         Ok(match tag.clone() {
-            Tag::HtmlBlock => {
-                self.children(tag)
-            }
+            Tag::HtmlBlock => self.children(tag),
             Tag::Paragraph => cx.el(Paragraph, self.children(tag)),
             Tag::Heading { level, .. } => cx.el(Heading(level as u8), self.children(tag)),
             Tag::BlockQuote(_) => cx.el(BlockQuote, self.children(tag)),
