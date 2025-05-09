@@ -19,7 +19,7 @@ use katex;
 use super::HtmlElement::*;
 use super::{Context, ElementAttributes, HtmlError, LinkDescription, MdComponentProps};
 
-use crate::component::{ComponentCall, CustomHtmlTag};
+use crate::component::{ComponentCall, CustomHtmlTag, CustomHtmlTagError};
 
 // load the default syntect options to highlight code
 lazy_static::lazy_static! {
@@ -295,24 +295,52 @@ where
                         current_name,
                         "expected end of component",
                     )),
-                    Err(e) => Err(HtmlError::syntax(e)),
+                    Err(e) => Err(HtmlError::syntax(e.message)),
                 }
             }
             None => {
+                // If making a new html tag, check if it has a name that is a valid custom component name.
+                // If so, render it accordingly (as the component or error).
+                // Otherwise fall through to the catch all inline html case below.
                 if can_be_custom_component(raw_html) {
                     match raw_html.parse() {
-                        Ok(CustomHtmlTag::Inline(s)) => self.custom_component_inline(s),
-                        Ok(CustomHtmlTag::End(name)) => {
-                            Err(HtmlError::component(name, "expected start, not end"))
+                        Ok(CustomHtmlTag::Inline(s)) => {
+                            if self.cx.has_custom_component(&s.name) {
+                                return self.custom_component_inline(s);
+                            }
                         }
-                        Ok(CustomHtmlTag::Start(s)) => self.custom_component(s),
-                        Err(e) => Err(HtmlError::syntax(e)),
-                    }
-                } else {
-                    Ok(self
-                        .cx
-                        .el_span_with_inner_html(raw_html.to_string(), Default::default()))
+                        Ok(CustomHtmlTag::End(name)) => {
+                            if self.cx.has_custom_component(&name) {
+                                return Err(HtmlError::component(name, "expected start, not end"));
+                            }
+                        }
+                        Ok(CustomHtmlTag::Start(s)) => {
+                            if self.cx.has_custom_component(&s.name) {
+                                return self.custom_component(s);
+                            }
+                        }
+                        Err(CustomHtmlTagError {
+                            name: Some(name),
+                            message,
+                        }) => {
+                            if self.cx.has_custom_component(&name) {
+                                return Err(HtmlError::component(
+                                    name,
+                                    format!("not a valid component: {message}"),
+                                ));
+                            }
+                        }
+                        // Component did not parse as a custom component far enough to get a name, so fall through to raw html.
+                        Err(CustomHtmlTagError {
+                            name: None,
+                            message: _,
+                        }) => {}
+                    };
                 }
+                // Not a custom component, so render html as is without and parsing/validation.
+                Ok(self
+                    .cx
+                    .el_span_with_inner_html(raw_html.to_string(), Default::default()))
             }
         }
     }

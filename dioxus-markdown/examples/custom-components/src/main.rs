@@ -85,7 +85,9 @@ mod tests {
     // Adapted from https://dioxuslabs.com/learn/0.6/cookbook/testing/
     fn test_hook_simple(mut check: impl FnMut() + 'static) {
         fn mock_app() -> Element {
-            rsx! { div {} }
+            rsx! {
+                div {}
+            }
         }
 
         let vdom = VirtualDom::new(mock_app);
@@ -116,7 +118,7 @@ mod tests {
     /// Must be run in a Dioxus runtime
     fn components() -> CustomComponents {
         let mut components = CustomComponents::new();
-        components.register("X", |props| Ok(rsx! { "Content" }));
+        components.register("X", |_props| Ok(rsx! { "Content" }));
         components
     }
 
@@ -173,9 +175,7 @@ mod tests {
                     Markdown { src: "<X/><X/>", components: components() }
                 },
                 rsx! {
-                    p { style: "", class: "",
-                        "ContentContent"
-                    }
+                    p { style: "", class: "", "ContentContent" }
                 },
             )
         });
@@ -219,9 +219,7 @@ mod tests {
                 },
                 // TODO: this seems like it should either produce two Xs or error, but just gives 1
                 rsx! {
-                    p { style: "", class: "",
-                        "Content"
-                    }
+                    p { style: "", class: "", "Content" }
                 },
             )
         });
@@ -236,6 +234,49 @@ mod tests {
                 },
                 // TODO: this seems like it should either produce two Xs or error, but just gives 1
                 rsx! { "Content" },
+            )
+        });
+    }
+
+    #[test]
+    fn inline_html_like_as_text() {
+        test_hook_simple(|| {
+            assert_rsx_eq(
+                rsx! {
+                    // TODO: provide a way to opt into preserving html as text
+                    Markdown {
+                        src: "For some values of X, Y, and Z, assume X<Y and Y>Z",
+                        components: components(),
+                    }
+                },
+                rsx! {
+                    p { style: "", class: "",
+                        span { style: "", class: "",
+                            "For some values of X, Y, and Z, assume X<Y and Y>Z"
+                        }
+                    }
+                },
+            )
+        });
+    }
+
+    #[test]
+    fn inline_html_like_as_html() {
+        test_hook_simple(|| {
+            assert_rsx_eq(
+                rsx! {
+                    Markdown {
+                        src: "For some values of X, Y, and Z, assume X<Y and Y>Z",
+                        components: components(),
+                    }
+                },
+                rsx! {
+                    p { style: "", class: "",
+                        span { style: "", class: "", "For some values of X, Y, and Z, assume X" }
+                        span { style: "", class: "", dangerous_inner_html: "<Y and Y>" }
+                        span { style: "", class: "", "Z" }
+                    }
+                },
             )
         });
     }
