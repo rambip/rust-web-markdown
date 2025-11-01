@@ -24,7 +24,7 @@ pub mod debug {
 
 #[derive(Clone, PartialEq, Default, Props)]
 pub struct MdProps {
-    src: ReadOnlySignal<String>,
+    src: ReadSignal<String>,
 
     /// The callback called when a component is clicked.
     /// If you want to control what happens when a link is clicked,
@@ -52,7 +52,7 @@ pub struct MdProps {
     parse_options: Option<Options>,
 
     #[props(default)]
-    components: ReadOnlySignal<CustomComponents>,
+    components: ReadSignal<CustomComponents>,
 
     frontmatter: Option<Signal<String>>,
 
@@ -75,7 +75,7 @@ pub struct MarkdownMouseEvent {
 }
 
 #[derive(Clone, Copy)]
-pub struct MdContext(ReadOnlySignal<MdProps>);
+pub struct MdContext(ReadSignal<MdProps>);
 
 /// component store.
 /// It is called when therer is a `<CustomComponent>` inside the markdown source.
