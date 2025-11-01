@@ -289,15 +289,15 @@ impl<'src> Context<'src, 'static> for MdContext {
                 f.call(e)
             }
         };
-        rsx!(
-            hr { onclick, style: "{style}", class: "{class}" }
-        )
+        rsx!(hr {
+            onclick,
+            style: "{style}",
+            class: "{class}"
+        })
     }
 
     fn el_br(self) -> Self::View {
-        rsx!(
-            br {}
-        )
+        rsx!(br {})
     }
 
     fn el_fragment(self, children: Vec<Self::View>) -> Self::View {
@@ -313,9 +313,10 @@ impl<'src> Context<'src, 'static> for MdContext {
     }
 
     fn el_img(self, src: String, alt: String) -> Self::View {
-        rsx!(
-            img { src: "{src}", alt: "{alt}" }
-        )
+        rsx!(img {
+            src: "{src}",
+            alt: "{alt}"
+        })
     }
 
     fn el_text<'a>(self, text: CowStr<'a>) -> Self::View {
@@ -336,15 +337,13 @@ impl<'src> Context<'src, 'static> for MdContext {
                 f.call(e)
             }
         };
-        rsx!(
-            input {
-                r#type: "checkbox",
-                checked,
-                style: "{style}",
-                class: "{class}",
-                onclick,
-            }
-        )
+        rsx!(input {
+            r#type: "checkbox",
+            checked,
+            style: "{style}",
+            class: "{class}",
+            onclick,
+        })
     }
 
     fn props(self) -> MarkdownProps {
