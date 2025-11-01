@@ -133,71 +133,121 @@ impl<'src> Context<'src, 'static> for MdContext {
 
         match e {
             HtmlElement::Div => {
-                rsx! {div {onclick:onclick, style: "{style}", class: "{class}", {inside}} }
+                rsx! {
+                    div { onclick, style: "{style}", class: "{class}", {inside} }
+                }
             }
             HtmlElement::Span => {
-                rsx! {span {onclick: onclick, style: "{style}", class: "{class}", {inside} } }
+                rsx! {
+                    span { onclick, style: "{style}", class: "{class}", {inside} }
+                }
             }
             HtmlElement::Paragraph => {
-                rsx! {p {onclick: onclick, style: "{style}", class: "{class}", {inside} } }
+                rsx! {
+                    p { onclick, style: "{style}", class: "{class}", {inside} }
+                }
             }
             HtmlElement::BlockQuote => {
-                rsx! {blockquote {onclick: onclick, style: "{style}", class: "{class}", {inside} } }
+                rsx! {
+                    blockquote { onclick, style: "{style}", class: "{class}", {inside} }
+                }
             }
             HtmlElement::Ul => {
-                rsx! {ul {onclick: onclick, style: "{style}", class: "{class}", {inside} } }
+                rsx! {
+                    ul { onclick, style: "{style}", class: "{class}", {inside} }
+                }
             }
             HtmlElement::Ol(x) => {
-                rsx! {ol {onclick: onclick, style: "{style}", class: "{class}", start: x as i64, {inside} } }
+                rsx! {
+                    ol {
+                        onclick,
+                        style: "{style}",
+                        class: "{class}",
+                        start: x as i64,
+                        {inside}
+                    }
+                }
             }
             HtmlElement::Li => {
-                rsx! {li {onclick: onclick, style: "{style}", class: "{class}", {inside} } }
+                rsx! {
+                    li { onclick, style: "{style}", class: "{class}", {inside} }
+                }
             }
             HtmlElement::Heading(1) => {
-                rsx! {h1 {onclick: onclick, style: "{style}", class: "{class}", {inside} } }
+                rsx! {
+                    h1 { onclick, style: "{style}", class: "{class}", {inside} }
+                }
             }
             HtmlElement::Heading(2) => {
-                rsx! {h2 {onclick: onclick, style: "{style}", class: "{class}", {inside} } }
+                rsx! {
+                    h2 { onclick, style: "{style}", class: "{class}", {inside} }
+                }
             }
             HtmlElement::Heading(3) => {
-                rsx! {h3 {onclick: onclick, style: "{style}", class: "{class}", {inside} } }
+                rsx! {
+                    h3 { onclick, style: "{style}", class: "{class}", {inside} }
+                }
             }
             HtmlElement::Heading(4) => {
-                rsx! {h4 {onclick: onclick, style: "{style}", class: "{class}", {inside} } }
+                rsx! {
+                    h4 { onclick, style: "{style}", class: "{class}", {inside} }
+                }
             }
             HtmlElement::Heading(5) => {
-                rsx! {h5 {onclick: onclick, style: "{style}", class: "{class}", {inside} } }
+                rsx! {
+                    h5 { onclick, style: "{style}", class: "{class}", {inside} }
+                }
             }
             HtmlElement::Heading(6) => {
-                rsx! {h6 {onclick: onclick, style: "{style}", class: "{class}", {inside} } }
+                rsx! {
+                    h6 { onclick, style: "{style}", class: "{class}", {inside} }
+                }
             }
             HtmlElement::Heading(_) => panic!(),
             HtmlElement::Table => {
-                rsx! {table {onclick: onclick, style: "{style}", class: "{class}", {inside} } }
+                rsx! {
+                    table { onclick, style: "{style}", class: "{class}", {inside} }
+                }
             }
             HtmlElement::Thead => {
-                rsx! {thead {onclick: onclick, style: "{style}", class: "{class}", {inside} } }
+                rsx! {
+                    thead { onclick, style: "{style}", class: "{class}", {inside} }
+                }
             }
             HtmlElement::Trow => {
-                rsx! {tr {onclick: onclick, style: "{style}", class: "{class}", {inside} } }
+                rsx! {
+                    tr { onclick, style: "{style}", class: "{class}", {inside} }
+                }
             }
             HtmlElement::Tcell => {
-                rsx! {td {onclick: onclick, style: "{style}", class: "{class}", {inside} } }
+                rsx! {
+                    td { onclick, style: "{style}", class: "{class}", {inside} }
+                }
             }
             HtmlElement::Italics => {
-                rsx! {i {onclick: onclick, style: "{style}", class: "{class}", {inside} } }
+                rsx! {
+                    i { onclick, style: "{style}", class: "{class}", {inside} }
+                }
             }
             HtmlElement::Bold => {
-                rsx! {b {onclick: onclick, style: "{style}", class: "{class}", {inside} } }
+                rsx! {
+                    b { onclick, style: "{style}", class: "{class}", {inside} }
+                }
             }
             HtmlElement::StrikeThrough => {
-                rsx! {s {onclick: onclick, style: "{style}", class: "{class}", {inside} } }
+                rsx! {
+                    s { onclick, style: "{style}", class: "{class}", {inside} }
+                }
             }
             HtmlElement::Pre => {
-                rsx! {p {onclick: onclick, style: "{style}", class: "{class}", {inside} } }
+                rsx! {
+                    p { onclick, style: "{style}", class: "{class}", {inside} }
+                }
             }
             HtmlElement::Code => {
-                rsx! {code {onclick: onclick, style: "{style}", class: "{class}", {inside} } }
+                rsx! {
+                    code { onclick, style: "{style}", class: "{class}", {inside} }
+                }
             }
         }
     }
@@ -216,11 +266,11 @@ impl<'src> Context<'src, 'static> for MdContext {
         };
         let props = self.0();
         if props.preserve_html {
-        rsx! {
-            span {
-                dangerous_inner_html: "{inner_html}",
-                style: "{style}",
-                class: "{class}",
+            rsx! {
+                span {
+                    dangerous_inner_html: "{inner_html}",
+                    style: "{style}",
+                    class: "{class}",
                     onclick,
                 }
             }
@@ -240,7 +290,7 @@ impl<'src> Context<'src, 'static> for MdContext {
             }
         };
         rsx!(hr {
-            onclick: onclick,
+            onclick,
             style: "{style}",
             class: "{class}"
         })
@@ -257,10 +307,9 @@ impl<'src> Context<'src, 'static> for MdContext {
     }
 
     fn el_a(self, children: Self::View, href: String) -> Self::View {
-        rsx! {a {
-            href: "{href}",
-            {children}
-        }}
+        rsx! {
+            a { href: "{href}", {children} }
+        }
     }
 
     fn el_img(self, src: String, alt: String) -> Self::View {
@@ -290,10 +339,10 @@ impl<'src> Context<'src, 'static> for MdContext {
         };
         rsx!(input {
             r#type: "checkbox",
-            checked: checked,
+            checked,
             style: "{style}",
             class: "{class}",
-            onclick: onclick
+            onclick,
         })
     }
 
@@ -371,9 +420,7 @@ pub fn Markdown(props: MdProps) -> Element {
     let signal: Signal<MdProps> = Signal::new(props);
     let child = markdown_component(MdContext(signal.into()), &src);
     rsx! {
-        document::Style {
-            href: MATH_STYLE_SHEET_LINK.href,
-        }
+        document::Style { href: MATH_STYLE_SHEET_LINK.href }
         {child}
     }
 }
