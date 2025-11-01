@@ -216,7 +216,7 @@ impl<'src> Context<'src, 'static> for MdContext {
         };
         let props = self.0();
         if props.preserve_html {
-        rsx! {
+            rsx! {
             span {
                 dangerous_inner_html: "{inner_html}",
                 style: "{style}",
