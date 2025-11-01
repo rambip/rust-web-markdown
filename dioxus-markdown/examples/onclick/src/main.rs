@@ -37,19 +37,12 @@ fn App() -> Element {
     let onclick = move |e: MarkdownMouseEvent| range.set(e.position);
     rsx! {
         div {
-            Markdown {
-                src:MARKDOWN_SOURCE,
-                on_click:onclick
-            }
+            Markdown { src: MARKDOWN_SOURCE, on_click: onclick }
             br {}
             hr {}
-            pre {
-                style: "border: 2 px solid orange",
+            pre { style: "border: 2 px solid orange",
                 {before}
-                span {
-                    style: "background-color: orange",
-                    {middle}
-                }
+                span { style: "background-color: orange", {middle} }
                 {after}
             }
         }
