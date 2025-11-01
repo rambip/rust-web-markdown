@@ -1,7 +1,7 @@
 // import the prelude to get access to the `rsx!` macro and the `Scope` and `Element` types
 use dioxus::prelude::*;
 
-use dioxus_markdown::*;
+use dioxus_markdown::Markdown;
 
 static MARKDOWN_SOURCE: &str = r#"
 ## Code
