@@ -243,10 +243,10 @@ mod tests {
         test_hook_simple(|| {
             assert_rsx_eq(
                 rsx! {
-                    // TODO: provide a way to opt into preserving html as text
                     Markdown {
                         src: "For some values of X, Y, and Z, assume X<Y and Y>Z",
                         components: components(),
+                        preserve_html: false,
                     }
                 },
                 rsx! {
@@ -254,7 +254,6 @@ mod tests {
                         span { style: "", class: "", "For some values of X, Y, and Z, assume X" }
                         span { style: "", class: "", "<Y and Y>" }
                         span { style: "", class: "", "Z" }
-                        
                     }
                 },
             )
@@ -269,12 +268,17 @@ mod tests {
                     Markdown {
                         src: "For some values of X, Y, and Z, assume X<Y and Y>Z",
                         components: components(),
+                        preserve_html: true,
                     }
                 },
                 rsx! {
                     p { style: "", class: "",
                         span { style: "", class: "", "For some values of X, Y, and Z, assume X" }
-                        span { style: "", class: "", dangerous_inner_html: "<Y and Y>" }
+                        span {
+                            style: "",
+                            class: "",
+                            dangerous_inner_html: "<Y and Y>",
+                        }
                         span { style: "", class: "", "Z" }
                     }
                 },
