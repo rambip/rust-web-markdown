@@ -6,9 +6,9 @@ use dioxus_markdown::{Markdown, Options};
 #[component]
 fn Logger() -> Element {
     rsx! {
-        {
-            DEBUG_INFO.read().iter().map(|x| rsx! {li {"{x}"}})
-        }
+        {DEBUG_INFO.read().iter().map(|x| rsx! {
+            li { "{x}" }
+        })}
     }
 }
 
@@ -35,45 +35,48 @@ fn App() -> Element {
     });
 
     rsx! {
-        h1 {"Markdown Editor"},
-        div {
-            class: "container",
+        h1 { "Markdown Editor" }
+        div { class: "container",
             div {
                 textarea {
                     value: "{content}",
                     rows: "30",
                     oninput: move |evt| content.set(evt.value()),
-                },
+                }
                 div {
-                    label { r#for: "wiki", "enable wikilinks" },
-                    input {r#type: "checkbox", id: "wiki",
-                        oninput: move |e| wikilinks_enabled.set(e.value()=="true")
+                    label { r#for: "wiki", "enable wikilinks" }
+                    input {
+                        r#type: "checkbox",
+                        id: "wiki",
+                        oninput: move |e| wikilinks_enabled.set(e.value() == "true"),
                     }
                 }
                 div {
-                    label { r#for: "hardbreaks", "convert soft breaks to hard breaks" },
-                    input {r#type: "checkbox", id: "hardbreaks",
-                        oninput: move |e| hardbreaks_enabled.set(e.value()=="true")
+                    label { r#for: "hardbreaks", "convert soft breaks to hard breaks" }
+                    input {
+                        r#type: "checkbox",
+                        id: "hardbreaks",
+                        oninput: move |e| hardbreaks_enabled.set(e.value() == "true"),
                     }
                 }
                 div {
-                    label { r#for: "debug", "enable debugging" },
-                    input {r#type: "checkbox", id: "debug",
-                        oninput: move |e| debug_enabled.set(e.value()=="true")
+                    label { r#for: "debug", "enable debugging" }
+                    input {
+                        r#type: "checkbox",
+                        id: "debug",
+                        oninput: move |e| debug_enabled.set(e.value() == "true"),
                     }
                 }
-            },
-            div {
-                class: "md-view",
+            }
+            div { class: "md-view",
                 Markdown {
                     src: content,
                     wikilinks: wikilinks_enabled(),
                     hard_line_breaks: hardbreaks_enabled(),
                     parse_options: parse_options(),
-                },
+                }
             }
-            div {
-                class: "debug-view",
+            div { class: "debug-view",
                 if debug_enabled() {
                     Logger {}
                 }

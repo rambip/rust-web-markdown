@@ -54,10 +54,7 @@ Even todo lists:
 #[component]
 fn App() -> Element {
     rsx! {
-        Markdown {
-            src: MARKDOWN_SOURCE,
-            wikilinks: true,
-        }
+        Markdown { src: MARKDOWN_SOURCE, wikilinks: true }
     }
 }
 
