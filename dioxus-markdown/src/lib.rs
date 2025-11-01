@@ -55,12 +55,6 @@ pub struct MdProps {
     components: ReadOnlySignal<CustomComponents>,
 
     frontmatter: Option<Signal<String>>,
-
-    /// wether to preserve arbitrary html.
-    /// If true, content may inject unsafe html, which could be a security or privacy risk if the input comes from an untrusted source.
-    /// TODO: supporting a sanitized subset of html might be a better approach in the future.
-    #[props(default = true)]
-    preserve_html: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -214,19 +208,12 @@ impl<'src> Context<'src, 'static> for MdContext {
                 f.call(e)
             }
         };
-        let props = self.0();
-        if props.preserve_html {
         rsx! {
             span {
                 dangerous_inner_html: "{inner_html}",
                 style: "{style}",
                 class: "{class}",
-                    onclick,
-                }
-            }
-        } else {
-            rsx! {
-                span { style: "{style}", class: "{class}", onclick, "{inner_html}" }
+                onclick: onclick
             }
         }
     }
