@@ -10,24 +10,22 @@ jobs:
         example:
           ["custom-components", "editor", "onclick", "performance", "showcase"]
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1.0.6
+      - uses: actions/checkout@v5
+
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
-          profile: minimal
-          target: wasm32-unknown-unknown
-          override: true
+          targets: wasm32-unknown-unknown
 
       - uses: Swatinem/rust-cache@v2
 
-      - uses: jetli/trunk-action@v0.5.0
+      - uses: jetli/trunk-action@v0.5.1
 
       - name: Build example 🎁
         shell: bash
         run: "cd yew-markdown/examples/${{matrix.example}} && trunk build --release --public-url /${{ github.event.repository.name }}/${{matrix.example}}"
 
       - name: upload result
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.example }}
           path: "yew-markdown/examples/${{ matrix.example }}/dist"
@@ -49,13 +47,13 @@ jobs:
 
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           path: combined-dist
           merge-multiple: false
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: combined-dist
 
