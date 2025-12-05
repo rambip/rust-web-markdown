@@ -1,4 +1,4 @@
-use web_framework_markdown::{markdown_component, CowStr, MarkdownProps, MATH_STYLE_SHEET_LINK};
+use web_framework_markdown::{markdown_component, CowStr, MarkdownProps};
 
 use std::collections::BTreeMap;
 
@@ -419,8 +419,13 @@ pub fn Markdown(props: MdProps) -> Element {
     let src: String = props.src.to_string();
     let signal: Signal<MdProps> = Signal::new(props);
     let child = markdown_component(MdContext(signal.into()), &src);
+    #[cfg(feature = "maths")]
     rsx! {
-        document::Style { href: MATH_STYLE_SHEET_LINK.href }
+        document::Style { href: web_framework_markdown::MATH_STYLE_SHEET_LINK.href }
+        {child}
+    }
+    #[cfg(not(feature = "maths"))]
+    rsx! {
         {child}
     }
 }

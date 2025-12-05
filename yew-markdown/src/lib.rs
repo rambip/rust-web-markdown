@@ -1,6 +1,5 @@
 use web_framework_markdown::{
     markdown_component, Context, CowStr, ElementAttributes, HtmlElement, MarkdownProps, StyleLink,
-    MATH_STYLE_SHEET_LINK,
 };
 
 use core::ops::Range;
@@ -320,22 +319,25 @@ pub struct Props {
 
 #[function_component]
 pub fn Markdown(props: &Props) -> Html {
-    let document = window().unwrap().document().unwrap();
+    #[cfg(feature = "maths")]
+    {
+        let document = window().unwrap().document().unwrap();
 
-    let link = document.create_element("link").unwrap();
+        let link = document.create_element("link").unwrap();
 
-    let StyleLink {
-        rel,
-        href,
-        integrity,
-        crossorigin,
-    } = MATH_STYLE_SHEET_LINK;
-    link.set_attribute("rel", rel).unwrap();
-    link.set_attribute("href", href).unwrap();
-    link.set_attribute("integrity", integrity).unwrap();
-    link.set_attribute("crossorigin", crossorigin).unwrap();
+        let StyleLink {
+            rel,
+            href,
+            integrity,
+            crossorigin,
+        } = web_framework_markdown::MATH_STYLE_SHEET_LINK;
+        link.set_attribute("rel", rel).unwrap();
+        link.set_attribute("href", href).unwrap();
+        link.set_attribute("integrity", integrity).unwrap();
+        link.set_attribute("crossorigin", crossorigin).unwrap();
 
-    document.head().unwrap().append_child(&link).unwrap();
+        document.head().unwrap().append_child(&link).unwrap();
+    }
 
     markdown_component(props, &props.src)
 }

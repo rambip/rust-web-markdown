@@ -1,6 +1,5 @@
 use web_framework_markdown::{
     markdown_component, Context, CowStr, ElementAttributes, HtmlElement, MarkdownProps, StyleLink,
-    MATH_STYLE_SHEET_LINK,
 };
 
 pub type MdComponentProps = web_framework_markdown::MdComponentProps<View>;
@@ -303,22 +302,26 @@ pub fn __Md(
 
 #[allow(non_snake_case)]
 pub fn Markdown(props: __MdProps) -> impl IntoView {
-    let StyleLink {
-        rel,
-        href,
-        integrity,
-        crossorigin,
-    } = MATH_STYLE_SHEET_LINK;
+    #[cfg(feature = "maths")]
+    {
+        let StyleLink {
+            rel,
+            href,
+            integrity,
+            crossorigin,
+        } = web_framework_markdown::MATH_STYLE_SHEET_LINK;
 
-    let document = document();
+        let document = document();
 
-    let link = document.create_element("link").unwrap();
+        let link = document.create_element("link").unwrap();
 
-    link.set_attribute("rel", rel).unwrap();
-    link.set_attribute("href", href).unwrap();
-    link.set_attribute("integrity", integrity).unwrap();
-    link.set_attribute("crossorigin", crossorigin).unwrap();
+        link.set_attribute("rel", rel).unwrap();
+        link.set_attribute("href", href).unwrap();
+        link.set_attribute("integrity", integrity).unwrap();
+        link.set_attribute("crossorigin", crossorigin).unwrap();
 
-    document.head().unwrap().append_child(&link).unwrap();
+        document.head().unwrap().append_child(&link).unwrap();
+    }
+
     move || markdown_component(&props, &props.src.get())
 }
