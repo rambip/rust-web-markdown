@@ -106,10 +106,15 @@ fn render_maths<'a, 'callback, F: Context<'a, 'callback>>(
     display_mode: MathMode,
     range: Range<usize>,
 ) -> Result<F::View, HtmlError> {
-    let opts = katex::Opts::builder()
+    use katex::{KatexContext, Settings};
+    
+    // The context caches fonts, macros, and environments – reuse it between renders.
+    let ctx = KatexContext::default();
+    
+    // Start with the default configuration and tweak as needed.
+    let settings = Settings::builder()
         .display_mode(display_mode == MathMode::Display)
-        .build()
-        .unwrap();
+        .build();
 
     let class_name = match display_mode {
         MathMode::Inline => "math-inline",
@@ -124,7 +129,7 @@ fn render_maths<'a, 'callback, F: Context<'a, 'callback>>(
         ..Default::default()
     };
 
-    match katex::render_with_opts(content, opts) {
+    match katex::render_to_string(&ctx, content, &settings) {
         Ok(x) => Ok(cx.el_span_with_inner_html(x, attributes)),
         Err(_) => Err(HtmlError::Math),
     }

@@ -17,14 +17,12 @@ lazy_static = "1.4.0"
 pulldown-cmark = "0.13.0"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-katex = { version = "0.4", default-features = false, features = [
-    "wasm-js",
-], optional = true }
+katex-rs = { version = "0.2", optional = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-katex = { version = "0.4", optional = true }
+katex-rs = { version = "0.2", optional = true }
 
 [features]
 default = ["maths"]
 debug = []
-maths = ["katex"]
+maths = ["katex-rs"]
