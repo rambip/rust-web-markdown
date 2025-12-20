@@ -75,14 +75,14 @@ mod tests {
     use dioxus::prelude::*;
     use dioxus_markdown::{CustomComponents, Markdown};
 
-    // From https://dioxuslabs.com/learn/0.6/cookbook/testing/
+    // From https://dioxuslabs.com/learn/0.7/guides/testing/web
     fn assert_rsx_eq(first: Element, second: Element) {
         let first = dioxus_ssr::render_element(first);
         let second = dioxus_ssr::render_element(second);
         pretty_assertions::assert_str_eq!(first, second);
     }
 
-    // Adapted from https://dioxuslabs.com/learn/0.6/cookbook/testing/
+    // Adapted from https://dioxuslabs.com/learn/0.7/guides/testing/web
     fn test_hook_simple(mut check: impl FnMut() + 'static) {
         fn mock_app() -> Element {
             rsx! {
@@ -92,11 +92,9 @@ mod tests {
 
         let vdom = VirtualDom::new(mock_app);
 
-        vdom.in_runtime(|| {
-            ScopeId::ROOT.in_runtime(|| {
-                check();
-            })
-        })
+        vdom.in_scope(ScopeId::ROOT, || {
+            check();
+        });
     }
 
     #[test]

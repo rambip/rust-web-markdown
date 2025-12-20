@@ -255,7 +255,7 @@ impl ToString for HtmlError {
 /// ```
 ///
 /// Will be translated to
-/// ```rust
+/// ```rust,ignore
 /// MdComponentProps {
 ///     attributes: BTreeMap::from([("color", "blue"), ("size", "5")]),
 ///     children: ... // html view of **hey**

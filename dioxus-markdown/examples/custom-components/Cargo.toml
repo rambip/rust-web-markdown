@@ -6,10 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-dioxus = "0.7.0"
+dioxus = "0.7.2"
 dioxus-markdown = { path = "../../" }
 
 
 [dev-dependencies]
 pretty_assertions = "1.4.1"
-dioxus-ssr = "0.7.0"
+dioxus-ssr = "0.7.2"
