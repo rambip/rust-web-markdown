@@ -118,7 +118,7 @@ cd yew-markdown/examples/showcase && trunk build
 - `pulldown-cmark` - Markdown parsing
 - `syntect` - Syntax highlighting  
 - `web-sys` - Web APIs
-- `katex` - Math rendering (optional, feature-gated)
+ - `katex-rs` - Math rendering (optional, feature-gated)
 
 ### Framework Dependencies
 - `yew = "0.21"` for Yew implementation
@@ -145,11 +145,25 @@ cd yew-markdown/examples/showcase && trunk build
 - Requires external KaTeX CSS stylesheet
 - Automatically injected when `maths` feature is enabled
 - Uses `MATH_STYLE_SHEET_LINK` constant for CDN resource
+- Uses `katex-rs` crate for WASM-compatible math rendering
 
 ### Frontmatter Support
 - YAML-style metadata blocks are parsed
 - Accessible via `frontmatter` prop in framework components
 - Use `set_frontmatter()` method in `Context` implementation
+
+## Contributing Rules
+
+### Code Formatting
+- **Always run `cargo fmt` before committing** - This is enforced by CI and required for all PRs
+- Use `cargo fmt -- --check` to verify formatting without making changes
+- CI will fail if code is not properly formatted
+
+### Pre-commit Checklist
+- [ ] Run `cargo fmt` to format all code
+- [ ] Run `cargo check --all-features` to ensure compilation
+- [ ] Test changes with relevant framework examples
+- [ ] Verify WASM compilation: `cargo build --target wasm32-unknown-unknown`
 
 ## Development Workflow
 
