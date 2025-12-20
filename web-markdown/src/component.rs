@@ -5,6 +5,7 @@ use std::collections::BTreeMap;
 /// called inside markdown
 pub struct ComponentCall<'a> {
     pub name: &'a str,
+    /// The attribute values may contain escape codes: it is up to to the consumer of this string to do un-escaping if required.
     pub attributes: BTreeMap<&'a str, &'a str>,
 }
 
@@ -92,6 +93,9 @@ pub struct CustomHtmlTagError {
 }
 
 impl CustomHtmlTag<'_> {
+    /// Parse an Html Tag.
+    /// This only supports the [Double-quoted attribute value syntax](https://www.w3.org/TR/2014/REC-html5-20141028/syntax.html#syntax-attributes)
+    /// and does not robustly validate things like invalid characters in attribute names.
     pub fn from_str(s: &'_ str) -> Result<CustomHtmlTag<'_>, CustomHtmlTagError> {
         let mut s2 = s;
         let mut stream = &mut s2;

@@ -351,6 +351,13 @@ where
         }
     }
 
+    /// Convert attributes from [ComponentCall] format to [MdComponentProps] format.
+    fn convert_attributes(input: BTreeMap<&str, &str>) -> BTreeMap<String, String> {
+        // TODO: this should probably unescape the attribute values.
+        // TODO: MdComponentProps should be updated to have a way to store the range information, which should be preserved.
+        BTreeMap::from_iter(input.iter().map(|(k, v)| (k.to_string(), v.to_string())))
+    }
+
     /// Renders a custom component with children.
     fn custom_component(&mut self, description: ComponentCall) -> Result<F::View, HtmlError> {
         let name: &str = &description.name;
@@ -370,12 +377,7 @@ where
         let children = self.cx.el_fragment(sub_renderer.collect());
 
         let props = MdComponentProps {
-            attributes: BTreeMap::from_iter(
-                description
-                    .attributes
-                    .iter()
-                    .map(|(k, v)| (k.to_string(), v.to_string())),
-            ),
+            attributes: Self::convert_attributes(description.attributes),
             children,
         };
 
@@ -399,12 +401,7 @@ where
         }
 
         let props = MdComponentProps {
-            attributes: BTreeMap::from_iter(
-                description
-                    .attributes
-                    .iter()
-                    .map(|(k, v)| (k.to_string(), v.to_string())),
-            ),
+            attributes: Self::convert_attributes(description.attributes),
             children: self.cx.el_empty(),
         };
 
