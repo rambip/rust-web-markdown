@@ -107,10 +107,10 @@ fn render_maths<'a, 'callback, F: Context<'a, 'callback>>(
     range: Range<usize>,
 ) -> Result<F::View, HtmlError> {
     use katex::{KatexContext, Settings};
-    
+
     // The context caches fonts, macros, and environments – reuse it between renders.
     let ctx = KatexContext::default();
-    
+
     // Start with the default configuration and tweak as needed.
     let settings = Settings::builder()
         .display_mode(display_mode == MathMode::Display)
