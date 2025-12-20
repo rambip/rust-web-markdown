@@ -439,8 +439,8 @@ where
                     return if buf.is_empty() { None } else { Some(buf) };
                 }
                 // These shouldn't normally appear inside code/metadata blocks,
-                // but if they do, we ignore them rather than crashing.
-                _ => {}
+                // but if they do, panic so this code can be updated to accommodate them.
+                _ => panic!("Unexpected content inside of children_text emitted by pulldown-cmark"),
             }
         }
 
