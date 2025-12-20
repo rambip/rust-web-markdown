@@ -1,6 +1,7 @@
 use core::ops::Range;
 
 use core::marker::PhantomData;
+use std::collections::BTreeMap;
 
 use syntect::highlighting::ThemeSet;
 use syntect::parsing::SyntaxSet;
@@ -292,7 +293,7 @@ where
                         "please make sure there is a newline before the end of your component",
                     ));
                 }
-                match raw_html.parse() {
+                match CustomHtmlTag::from_str(raw_html) {
                     Ok(CustomHtmlTag::End(name)) if &name == current_name => {
                         Ok(self.next().unwrap_or(self.cx.el_empty()))
                     }
@@ -308,7 +309,7 @@ where
                 // If so, render it accordingly (as the component or error).
                 // Otherwise fall through to the catch all inline html case below.
                 if can_be_custom_component(raw_html) {
-                    match raw_html.parse() {
+                    match CustomHtmlTag::from_str(raw_html) {
                         Ok(CustomHtmlTag::Inline(s)) => {
                             if self.cx.has_custom_component(&s.name) {
                                 return self.custom_component_inline(s);
@@ -364,12 +365,17 @@ where
             column_alignment: self.column_alignment.clone(),
             cell_index: 0,
             end_tag: self.end_tag,
-            current_component: Some(description.name.clone()),
+            current_component: Some(description.name.to_string()),
         };
         let children = self.cx.el_fragment(sub_renderer.collect());
 
         let props = MdComponentProps {
-            attributes: description.attributes,
+            attributes: BTreeMap::from_iter(
+                description
+                    .attributes
+                    .iter()
+                    .map(|(k, v)| (k.to_string(), v.to_string())),
+            ),
             children,
         };
 
@@ -393,7 +399,12 @@ where
         }
 
         let props = MdComponentProps {
-            attributes: description.attributes,
+            attributes: BTreeMap::from_iter(
+                description
+                    .attributes
+                    .iter()
+                    .map(|(k, v)| (k.to_string(), v.to_string())),
+            ),
             children: self.cx.el_empty(),
         };
 

@@ -1,74 +1,83 @@
-use core::iter::Peekable;
-use std::str::FromStr;
-
 use std::collections::BTreeMap;
 
 #[derive(Debug, PartialEq)]
 /// a custom non-native html element
 /// called inside markdown
-pub struct ComponentCall {
-    pub name: String,
-    pub attributes: BTreeMap<String, String>,
+pub struct ComponentCall<'a> {
+    pub name: &'a str,
+    pub attributes: BTreeMap<&'a str, &'a str>,
 }
 
 #[derive(Debug, PartialEq)]
 /// An html tag, used to create a custom component
-pub enum CustomHtmlTag {
+pub enum CustomHtmlTag<'a> {
     /// <Component key="value"/>
-    Inline(ComponentCall),
+    Inline(ComponentCall<'a>),
     /// <Component>
-    Start(ComponentCall),
+    Start(ComponentCall<'a>),
     /// </Component>
-    End(String),
+    End(&'a str),
 }
 
 type ParseError = String;
 
-fn parse_attribute_value(stream: &mut Peekable<std::str::Chars>) -> Result<String, ParseError> {
-    let mut attribute = String::new();
+fn parse_attribute_value<'a>(stream: &mut &'a str) -> Result<&'a str, ParseError> {
+    parse_expect_character(stream, '"', "please use `\"` to wrap your attribute values")?;
 
-    if stream.next() != Some('"') {
-        return Err("please use `\"` to wrap your attribute values".into());
-    }
-
-    loop {
-        match stream.peek() {
-            None => return Err("expected attribute value".into()),
-            Some(&'"') => break,
-            _ => attribute.push(stream.next().unwrap()),
+    match stream.split_once('"') {
+        Some((content, stream_new)) => {
+            *stream = stream_new;
+            return Ok(content);
         }
+        None => return Err("expected attribute value".into()),
     }
-    stream.next();
-
-    Ok(attribute)
 }
 
-fn parse_attribute_name(stream: &mut Peekable<std::str::Chars>) -> Result<String, ParseError> {
-    let mut name = String::new();
-
-    while stream.peek() == Some(&' ') {
-        stream.next();
+fn parse_expect_character<'a>(
+    stream: &mut &'a str,
+    expected: char,
+    error_message: &str,
+) -> Result<(), ParseError> {
+    match check_and_skip(stream, expected) {
+        true => Ok(()),
+        false => Err(error_message.into()),
     }
-
-    loop {
-        match stream.peek() {
-            None => return Err("expected equal sign after attribute name".into()),
-            Some(&'=') => break,
-            _ => name.push(stream.next().unwrap()),
-        }
-    }
-
-    Ok(name)
 }
 
-fn parse_attribute(stream: &mut Peekable<std::str::Chars>) -> Result<(String, String), ParseError> {
+fn check_and_skip<'a>(stream: &mut &'a str, expected: char) -> bool {
+    if stream.starts_with(expected) {
+        // Skip over expected
+        *stream = &stream[1..];
+        true
+    } else {
+        false
+    }
+}
+
+/// Reads and trims an identifier up to an equals sign
+///
+/// Trailing "=" is read from the stream.
+fn parse_attribute_name<'a>(stream: &mut &'a str) -> Result<&'a str, ParseError> {
+    match stream.split_once('=') {
+        Some((name, stream_new)) => {
+            *stream = stream_new;
+            let trimmed = name.trim();
+            if trimmed.find(char::is_whitespace).is_some() {
+                return Err(
+                    "attribute name must be followed by equals sign, and not contain whitespace"
+                        .into(),
+                );
+            }
+            return Ok(name.trim());
+        }
+        None => return Err("expected equal sign after attribute name".into()),
+    }
+}
+
+fn parse_attribute<'a>(stream: &mut &'a str) -> Result<(&'a str, &'a str), ParseError> {
     let name = parse_attribute_name(stream)?;
-    // equal sign
-    stream.next();
     // spaces
-    while stream.peek() == Some(&' ') {
-        stream.next();
-    }
+    *stream = &stream.trim_start();
     let attribute = parse_attribute_value(stream)?;
 
     Ok((name, attribute))
@@ -82,38 +91,29 @@ pub struct CustomHtmlTagError {
     pub message: String,
 }
 
-impl FromStr for CustomHtmlTag {
-    type Err = CustomHtmlTagError;
+impl CustomHtmlTag<'_> {
+    pub fn from_str(s: &'_ str) -> Result<CustomHtmlTag<'_>, CustomHtmlTagError> {
+        let mut s2 = s;
+        let mut stream = &mut s2;
+        parse_expect_character(stream, '<', "expected <").map_err(|e| CustomHtmlTagError {
+            name: None,
+            message: e,
+        })?;
 
-    fn from_str(s: &str) -> Result<CustomHtmlTag, Self::Err> {
-        let mut stream = s.chars().peekable();
+        let is_closing_tag = check_and_skip(stream, '/');
 
-        if stream.next() != Some('<') {
-            return Err(CustomHtmlTagError {
-                name: None,
-                message: "expected <".into(),
-            });
-        }
-
-        let is_end = if stream.peek() == Some(&'/') {
-            stream.next();
-            true
-        } else {
-            false
-        };
-
-        let mut name = String::new();
-
-        loop {
-            match stream.peek() {
-                Some(&' ') | Some(&'/') | Some(&'>') => break,
-                _ => name.push(stream.next().unwrap()),
+        let mut name = &stream[0..0];
+        for (index, char) in stream.char_indices() {
+            if char.is_whitespace() || char == '/' || char == '>' {
+                name = &stream[0..index];
+                *stream = &stream[index..];
+                break;
             }
         }
 
         let err = {
-            let name = name.clone();
-            move |message| -> Result<CustomHtmlTag, Self::Err> {
+            let name = name.to_string();
+            move |message| -> Result<CustomHtmlTag, CustomHtmlTagError> {
                 Err(CustomHtmlTagError {
                     name: Some(name.clone()),
                     message,
@@ -123,9 +123,17 @@ impl FromStr for CustomHtmlTag {
 
         let mut attributes = BTreeMap::new();
         loop {
-            match stream.peek() {
+            *stream = stream.trim_start();
+            match stream.chars().nth(0) {
                 None => return err("expected end of tag".into()),
-                Some(&'>') | Some(&'/') => break,
+                Some('/') => return Ok(CustomHtmlTag::Inline(ComponentCall { name, attributes })),
+                Some('>') => {
+                    return if is_closing_tag {
+                        Ok(CustomHtmlTag::End(name))
+                    } else {
+                        Ok(CustomHtmlTag::Start(ComponentCall { name, attributes }))
+                    }
+                }
                 _ => {
                     let parsed = parse_attribute(&mut stream);
                     match parsed {
@@ -134,23 +142,6 @@ impl FromStr for CustomHtmlTag {
                     };
                 }
             }
-        }
-
-        if stream.peek() == Some(&'/') {
-            return Ok(CustomHtmlTag::Inline(ComponentCall {
-                name,
-                attributes: attributes.into(),
-            }));
-        }
-
-        while stream.peek() == Some(&' ') {
-            stream.next();
-        }
-
-        if is_end {
-            Ok(CustomHtmlTag::End(name))
-        } else {
-            Ok(CustomHtmlTag::Start(ComponentCall { name, attributes }))
         }
     }
 }
@@ -162,7 +153,7 @@ mod test {
 
     #[test]
     fn parse_start() {
-        let c: CustomHtmlTag = "<a>".parse().unwrap();
+        let c: CustomHtmlTag = CustomHtmlTag::from_str("<a>").unwrap();
         assert_eq!(
             c,
             Start(ComponentCall {
@@ -174,13 +165,13 @@ mod test {
 
     #[test]
     fn parse_end() {
-        let c: CustomHtmlTag = "</a>".parse().unwrap();
+        let c: CustomHtmlTag = CustomHtmlTag::from_str("</a>").unwrap();
         assert_eq!(c, End("a".into()))
     }
 
     #[test]
     fn parse_inline_empty() {
-        let c: CustomHtmlTag = "<a/>".parse().unwrap();
+        let c: CustomHtmlTag = CustomHtmlTag::from_str("<a/>").unwrap();
         assert_eq!(
             c,
             Inline(ComponentCall {
@@ -192,7 +183,7 @@ mod test {
 
     #[test]
     fn parse_inline() {
-        let c: CustomHtmlTag = "<a key=\"val\"/>".parse().unwrap();
+        let c: CustomHtmlTag = CustomHtmlTag::from_str("<a key=\"val\"/>").unwrap();
         assert_eq!(
             c,
             Inline(ComponentCall {
@@ -204,7 +195,7 @@ mod test {
 
     #[test]
     fn parse_error() {
-        let c: Result<CustomHtmlTag, CustomHtmlTagError> = "<a x>".parse();
+        let c: Result<CustomHtmlTag, CustomHtmlTagError> = CustomHtmlTag::from_str("<a x>");
         match c {
             Ok(_) => panic!(),
             Err(CustomHtmlTagError {

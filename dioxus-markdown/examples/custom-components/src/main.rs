@@ -75,11 +75,14 @@ mod tests {
     use dioxus::prelude::*;
     use dioxus_markdown::{CustomComponents, Markdown};
 
-    // From https://dioxuslabs.com/learn/0.7/guides/testing/web
-    fn assert_rsx_eq(first: Element, second: Element) {
-        let first = dioxus_ssr::render_element(first);
-        let second = dioxus_ssr::render_element(second);
-        pretty_assertions::assert_str_eq!(first, second);
+    // Adapted From https://dioxuslabs.com/learn/0.7/guides/testing/web
+    // Using a macro makes the printed error location in output nicer.
+    macro_rules! assert_rsx_eq {
+        ($left:expr, $right:expr $(,)?) => {{
+            let first = dioxus_ssr::render_element($left);
+            let second = dioxus_ssr::render_element($right);
+            ::pretty_assertions::assert_str_eq!(first, second);
+        }};
     }
 
     // Adapted from https://dioxuslabs.com/learn/0.7/guides/testing/web
@@ -100,7 +103,7 @@ mod tests {
     #[test]
     fn minimal() {
         test_hook_simple(|| {
-            assert_rsx_eq(
+            assert_rsx_eq!(
                 rsx! {
                     Markdown { src: "ZZZ" }
                 },
@@ -123,7 +126,7 @@ mod tests {
     #[test]
     fn custom() {
         test_hook_simple(|| {
-            assert_rsx_eq(
+            assert_rsx_eq!(
                 rsx! {
                     Markdown { src: "<X/>", components: components() }
                 },
@@ -137,7 +140,7 @@ mod tests {
     #[test]
     fn custom_non_closing() {
         test_hook_simple(|| {
-            assert_rsx_eq(
+            assert_rsx_eq!(
                 rsx! {
                     Markdown { src: "<X>", components: components() }
                 },
@@ -151,7 +154,7 @@ mod tests {
     #[test]
     fn custom_plus_text() {
         test_hook_simple(|| {
-            assert_rsx_eq(
+            assert_rsx_eq!(
                 rsx! {
                     Markdown { src: "z<X/>", components: components() }
                 },
@@ -168,7 +171,7 @@ mod tests {
     #[test]
     fn custom_plus_custom() {
         test_hook_simple(|| {
-            assert_rsx_eq(
+            assert_rsx_eq!(
                 rsx! {
                     Markdown { src: "<X/><X/>", components: components() }
                 },
@@ -182,7 +185,7 @@ mod tests {
     #[test]
     fn custom_line_custom() {
         test_hook_simple(|| {
-            assert_rsx_eq(
+            assert_rsx_eq!(
                 rsx! {
                     Markdown { src: "<X/>\n<X/>", components: components() }
                 },
@@ -194,7 +197,7 @@ mod tests {
     #[test]
     fn tag_plus_text() {
         test_hook_simple(|| {
-            assert_rsx_eq(
+            assert_rsx_eq!(
                 rsx! {
                     Markdown { src: "z<X>", components: components() }
                 },
@@ -211,7 +214,7 @@ mod tests {
     #[test]
     fn tag_plus_tag() {
         test_hook_simple(|| {
-            assert_rsx_eq(
+            assert_rsx_eq!(
                 rsx! {
                     Markdown { src: "<X><X>", components: components() }
                 },
@@ -226,7 +229,7 @@ mod tests {
     #[test]
     fn tag_line_tag() {
         test_hook_simple(|| {
-            assert_rsx_eq(
+            assert_rsx_eq!(
                 rsx! {
                     Markdown { src: "<X>\n<X>", components: components() }
                 },
@@ -239,7 +242,7 @@ mod tests {
     #[test]
     fn inline_html_like_as_text() {
         test_hook_simple(|| {
-            assert_rsx_eq(
+            assert_rsx_eq!(
                 rsx! {
                     Markdown {
                         src: "For some values of X, Y, and Z, assume X<Y and Y>Z",
@@ -261,7 +264,7 @@ mod tests {
     #[test]
     fn inline_html_like_as_html() {
         test_hook_simple(|| {
-            assert_rsx_eq(
+            assert_rsx_eq!(
                 rsx! {
                     Markdown {
                         src: "For some values of X, Y, and Z, assume X<Y and Y>Z",
