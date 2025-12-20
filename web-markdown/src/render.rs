@@ -416,26 +416,41 @@ where
         self.cx.el_fragment(sub_renderer.collect())
     }
 
-    /// extract the text from the next text event
+    /// Collect all text inside `tag` until its closing `End` event.
+    ///
+    /// Older versions assumed there was exactly one `Event::Text` followed
+    /// by the closing `Event::End`, which is not guaranteed with
+    /// pulldown-cmark 0.13+ (empty or multi-chunk blocks). This version
+    /// accumulates text and stops at the matching closing tag instead
+    /// of panicking.
     fn children_text(&mut self, tag: Tag<'a>) -> Option<String> {
-        let text = match self.stream.next() {
-            Some((Event::Text(s), _)) => Some(s.to_string()),
-            None => None,
-            _ => panic!("expected string event, got something else"),
-        };
+        let end = tag.to_end();
+        let mut buf = String::new();
 
-        self.assert_closing_tag(tag.to_end());
-        text
-    }
+        for (event, _range) in self.stream.by_ref() {
+            match event {
+                pulldown_cmark::Event::Text(s) => buf.push_str(&s),
+                pulldown_cmark::Event::SoftBreak | pulldown_cmark::Event::HardBreak => {
+                    // Represent line breaks explicitly in the collected text
+                    buf.push('\n');
+                }
+                pulldown_cmark::Event::End(e) if e == end => {
+                    // We reached the closing tag for this block
+                    return if buf.is_empty() { None } else { Some(buf) };
+                }
+                // These shouldn't normally appear inside code/metadata blocks,
+                // but if they do, panic so this code can be updated to accommodate them.
+                _ => panic!("Unexpected content inside of children_text emitted by pulldown-cmark"),
+            }
+        }
 
-    // check that the closing tag is what was expected
-    fn assert_closing_tag(&mut self, end: TagEnd) {
-        let end_tag = &self
-            .stream
-            .next()
-            .expect("this event should be the closing tag")
-            .0;
-        assert_eq!(end_tag, &Event::End(end));
+        // If we run out of events without seeing the closing tag,
+        // just return whatever we collected (or None if empty).
+        if buf.is_empty() {
+            None
+        } else {
+            Some(buf)
+        }
     }
 
     fn render_tag(&mut self, tag: Tag<'a>, range: Range<usize>) -> Result<F::View, HtmlError> {
