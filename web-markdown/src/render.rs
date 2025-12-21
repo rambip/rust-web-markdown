@@ -1,6 +1,7 @@
 use core::ops::Range;
 
 use core::marker::PhantomData;
+use std::collections::BTreeMap;
 
 use syntect::highlighting::ThemeSet;
 use syntect::parsing::SyntaxSet;
@@ -292,7 +293,7 @@ where
                         "please make sure there is a newline before the end of your component",
                     ));
                 }
-                match raw_html.parse() {
+                match CustomHtmlTag::from_str(raw_html) {
                     Ok(CustomHtmlTag::End(name)) if &name == current_name => {
                         Ok(self.next().unwrap_or(self.cx.el_empty()))
                     }
@@ -308,7 +309,7 @@ where
                 // If so, render it accordingly (as the component or error).
                 // Otherwise fall through to the catch all inline html case below.
                 if can_be_custom_component(raw_html) {
-                    match raw_html.parse() {
+                    match CustomHtmlTag::from_str(raw_html) {
                         Ok(CustomHtmlTag::Inline(s)) => {
                             if self.cx.has_custom_component(&s.name) {
                                 return self.custom_component_inline(s);
@@ -350,6 +351,13 @@ where
         }
     }
 
+    /// Convert attributes from [ComponentCall] format to [MdComponentProps] format.
+    fn convert_attributes(input: BTreeMap<&str, &str>) -> BTreeMap<String, String> {
+        // TODO: this should probably unescape the attribute values.
+        // TODO: MdComponentProps should be updated to have a way to store the range information, which should be preserved.
+        BTreeMap::from_iter(input.iter().map(|(k, v)| (k.to_string(), v.to_string())))
+    }
+
     /// Renders a custom component with children.
     fn custom_component(&mut self, description: ComponentCall) -> Result<F::View, HtmlError> {
         let name: &str = &description.name;
@@ -364,12 +372,12 @@ where
             column_alignment: self.column_alignment.clone(),
             cell_index: 0,
             end_tag: self.end_tag,
-            current_component: Some(description.name.clone()),
+            current_component: Some(description.name.to_string()),
         };
         let children = self.cx.el_fragment(sub_renderer.collect());
 
         let props = MdComponentProps {
-            attributes: description.attributes,
+            attributes: Self::convert_attributes(description.attributes),
             children,
         };
 
@@ -393,7 +401,7 @@ where
         }
 
         let props = MdComponentProps {
-            attributes: description.attributes,
+            attributes: Self::convert_attributes(description.attributes),
             children: self.cx.el_empty(),
         };
 
