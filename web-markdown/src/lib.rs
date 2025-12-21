@@ -262,14 +262,25 @@ impl ToString for HtmlError {
 /// }
 /// ```
 pub struct MdComponentProps<V> {
-    pub attributes: BTreeMap<String, String>,
+    pub attributes: BTreeMap<String, MdComponentAttribute>,
     pub children: V,
+}
+
+#[derive(PartialEq, Clone)]
+pub struct MdComponentAttribute {
+    pub value: String,
+    /// Location in input markdown `&str` which contains the `attributes_value`.
+    pub range: Range<usize>,
 }
 
 impl<V> MdComponentProps<V> {
     /// returns the attribute string corresponding to the key `name`.
     /// returns None if the attribute was not provided
     pub fn get(&self, name: &str) -> Option<String> {
+        Self::get_attribute(&self, name).map(|a| a.value)
+    }
+
+    pub fn get_attribute(&self, name: &str) -> Option<MdComponentAttribute> {
         self.attributes.get(name).cloned()
     }
 
@@ -280,7 +291,7 @@ impl<V> MdComponentProps<V> {
         T: std::str::FromStr,
         T::Err: core::fmt::Debug,
     {
-        match self.attributes.get(name) {
+        match self.get(name) {
             Some(x) => x.clone().parse().map_err(|e| format!("{e:?}")),
             None => Err(format!("please provide the attribute `{name}`")),
         }
@@ -293,7 +304,7 @@ impl<V> MdComponentProps<V> {
         T: std::str::FromStr,
         T::Err: core::fmt::Debug,
     {
-        match self.attributes.get(name) {
+        match self.get(name) {
             Some(x) => match x.parse() {
                 Ok(a) => Ok(Some(a)),
                 Err(e) => Err(format!("{e:?}")),
