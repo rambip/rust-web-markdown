@@ -76,7 +76,7 @@ fn App() -> Element {
 
     components.register("PersistedCounter", move |props| {
         let value = props.get_attribute("value").unwrap();
-        let count = substring::ReadWriteBox::from_sub_string(src, value.range);
+        let count = substring::ReadWriteBox::from_sub_string(src, value.range)?;
         Ok(rsx! {
             PersistedCounter { count }
         })

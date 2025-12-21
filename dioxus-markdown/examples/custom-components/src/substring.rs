@@ -5,11 +5,11 @@
 
 use dioxus::signals::{ReadableExt, Signal, WritableExt};
 use std::fmt::Display;
-use std::marker::PhantomData;
 use std::ops::Range;
 use std::rc::Rc;
 use std::str::FromStr;
 
+/// Like a signal for part of a string.
 struct SubString {
     s: Signal<String>,
     range: Range<usize>,
@@ -28,20 +28,20 @@ impl SubString {
     }
 }
 
+/// An updatable substring, and cached value read from it.
 struct ParsedSubString<T> {
+    /// On write, the substring is updated.
     sub: SubString,
-    phantom: PhantomData<T>,
+    /// On read, current is used, which is typically (but not necessarily) parsed from the substring.
+    current: T,
 }
 
 impl<T> ReadWrite<T> for ParsedSubString<T>
 where
-    T: FromStr + Clone + ToString,
-    <T as FromStr>::Err: std::fmt::Debug,
+    T: Clone + ToString,
 {
     fn read_value(&self) -> T {
-        let s = self.sub.read();
-        let x = T::from_str(&s);
-        x.unwrap()
+        self.current.clone()
     }
 
     fn write_value(&self, t: T) {
@@ -77,40 +77,30 @@ impl<T> ReadWriteBox<T> {
     }
 }
 
-impl<T: Clone + FromStr + Display + 'static> ReadWriteBox<T>
-where
-    <T as FromStr>::Err: std::fmt::Debug,
-{
-    pub fn from_sub_string(s: Signal<String>, range: Range<usize>) -> Self {
-        let inner: ParsedSubString<T> = ParsedSubString {
-            phantom: PhantomData,
-            sub: { SubString { s, range } },
-        };
-        ReadWriteBox {
+impl<T: Clone + FromStr + Display + 'static> ReadWriteBox<T> {
+    pub fn from_sub_string(s: Signal<String>, range: Range<usize>) -> Result<Self, T::Err> {
+        let sub = { SubString { s, range } };
+        let current = T::from_str(&sub.read())?;
+        let inner = ParsedSubString { current, sub };
+        Ok(ReadWriteBox {
             content: Rc::new(inner),
-        }
+        })
     }
 }
 
-impl<T: std::ops::Sub<T, Output = T> + Clone + FromStr + Display + 'static> std::ops::SubAssign<T>
-    for ReadWriteBox<T>
-{
+impl<T: std::ops::Sub<T, Output = T> + Clone> std::ops::SubAssign<T> for ReadWriteBox<T> {
     fn sub_assign(&mut self, rhs: T) {
         self.write_value(self.read_value() - rhs);
     }
 }
 
-impl<T: std::ops::Add<T, Output = T> + Clone + FromStr + Display + 'static> std::ops::AddAssign<T>
-    for ReadWriteBox<T>
-{
+impl<T: std::ops::Add<T, Output = T> + Clone> std::ops::AddAssign<T> for ReadWriteBox<T> {
     fn add_assign(&mut self, rhs: T) {
         self.write_value(self.read_value() + rhs);
     }
 }
 
-impl<T: std::ops::Add<T, Output = T> + Clone + FromStr + Display + 'static> Display
-    for ReadWriteBox<T>
-{
+impl<T: Display> Display for ReadWriteBox<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.read_value().fmt(f)
     }
