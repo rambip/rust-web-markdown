@@ -21,7 +21,7 @@ use super::HtmlElement::*;
 use super::{Context, ElementAttributes, HtmlError, LinkDescription, MdComponentProps};
 
 use crate::component::{ComponentCall, CustomHtmlTag, CustomHtmlTagError};
-use crate::MdComponentAttribute;
+use crate::{get_substr_range, offset_range, MdComponentAttribute};
 
 // load the default syntect options to highlight code
 lazy_static::lazy_static! {
@@ -360,21 +360,13 @@ where
                 k.to_string(),
                 MdComponentAttribute {
                     value: v.to_string(),
-                    range: Self::get_range(input.full_string, v, input.range_offset),
+                    range: offset_range(
+                        get_substr_range(input.full_string, v).unwrap(),
+                        input.range_offset,
+                    ),
                 },
             )
         }))
-    }
-
-    /// Gives the byte of `parent` that is made up of `inner`.
-    fn get_range(parent: &str, inner: &str, base: usize) -> Range<usize> {
-        let a = parent.as_ptr() as usize;
-        let b = inner.as_ptr() as usize;
-
-        let offset = b - a;
-        assert!(offset + inner.len() <= parent.len());
-
-        return (base + offset)..(offset + base + inner.len());
     }
 
     /// Renders a custom component with children.
