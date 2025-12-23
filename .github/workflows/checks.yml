@@ -24,7 +24,20 @@ jobs:
       - name: Check if code compiles
         run: cargo check --all-features
 
-  # TODO: Add job that runs unit tests with cargo test.
+  check:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run tests
+        run: cargo test --all-features
 
   format:
     name: Check formatting
