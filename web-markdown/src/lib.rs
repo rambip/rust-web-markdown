@@ -262,14 +262,25 @@ impl ToString for HtmlError {
 /// }
 /// ```
 pub struct MdComponentProps<V> {
-    pub attributes: BTreeMap<String, String>,
+    pub attributes: BTreeMap<String, MdComponentAttribute>,
     pub children: V,
+}
+
+#[derive(PartialEq, Clone)]
+pub struct MdComponentAttribute {
+    pub value: String,
+    /// Location in input markdown `&str` which contains the `attributes_value`.
+    pub range: Range<usize>,
 }
 
 impl<V> MdComponentProps<V> {
     /// returns the attribute string corresponding to the key `name`.
     /// returns None if the attribute was not provided
     pub fn get(&self, name: &str) -> Option<String> {
+        Self::get_attribute(&self, name).map(|a| a.value)
+    }
+
+    pub fn get_attribute(&self, name: &str) -> Option<MdComponentAttribute> {
         self.attributes.get(name).cloned()
     }
 
@@ -280,7 +291,7 @@ impl<V> MdComponentProps<V> {
         T: std::str::FromStr,
         T::Err: core::fmt::Debug,
     {
-        match self.attributes.get(name) {
+        match self.get(name) {
             Some(x) => x.clone().parse().map_err(|e| format!("{e:?}")),
             None => Err(format!("please provide the attribute `{name}`")),
         }
@@ -293,7 +304,7 @@ impl<V> MdComponentProps<V> {
         T: std::str::FromStr,
         T::Err: core::fmt::Debug,
     {
-        match self.attributes.get(name) {
+        match self.get(name) {
             Some(x) => match x.parse() {
                 Ok(a) => Ok(Some(a)),
                 Err(e) => Err(format!("{e:?}")),
@@ -357,4 +368,62 @@ pub fn markdown_component<'a, 'callback, F: Context<'a, 'callback>>(
     let elements = Renderer::new(cx, &mut stream.into_iter()).collect::<Vec<_>>();
 
     cx.el_fragment(elements)
+}
+
+/// Gives the byte range of `parent` that is made up of `inner`.
+/// Once it is stable, this should be replaced by https://github.com/rust-lang/rust/issues/126769.
+pub(crate) fn get_substr_range(parent: &str, inner: &str) -> Option<Range<usize>> {
+    let a = parent.as_ptr().addr();
+    let b = inner.as_ptr().addr();
+
+    if inner.len() == 0 {
+        panic!("Zero length inner strings are not supported in get_substr_range to reduce risk of incompatibility with substr_range once stabilized")
+    }
+
+    if b < a {
+        return None;
+    }
+    let start_of_inner_in_parent = b - a;
+
+    // If parent starts at address 0, and inner ends at address usize::MAX, this could overflow.
+    // In practice this should be impossible for valid inputs, and impossible on all realistic systems, but validate it for completeness and clarity.
+    let one_past_end_of_inner_in_parent =
+        start_of_inner_in_parent.checked_add(inner.len()).unwrap();
+
+    if one_past_end_of_inner_in_parent > parent.len() {
+        return None;
+    }
+
+    return Some((start_of_inner_in_parent)..(start_of_inner_in_parent + inner.len()));
+}
+
+pub(crate) fn offset_range(range: Range<usize>, shift: usize) -> Range<usize> {
+    return (range.start + shift)..(range.end.checked_add(shift).unwrap());
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    fn check_range(s: &str, range: Range<usize>) {
+        assert_eq!(get_substr_range(s, &s[range.clone()]).unwrap(), range)
+    }
+
+    #[test]
+    fn get_substring_range_valid() {
+        let s = "<abc>";
+        check_range(s, 0..1);
+        check_range(s, 0..5);
+        check_range(s, 4..5);
+        assert_eq!(get_substr_range(s, s).unwrap(), 0..5);
+    }
+
+    #[test]
+    fn get_substring_range_invalid() {
+        let s = "<adc>";
+        let s2 = "<abc>";
+        assert_eq!(get_substr_range(s, s2), None);
+        assert_eq!(get_substr_range(s2, s), None);
+        assert_eq!(get_substr_range(s, &s2[0..1]), None);
+    }
 }

@@ -21,6 +21,7 @@ use super::HtmlElement::*;
 use super::{Context, ElementAttributes, HtmlError, LinkDescription, MdComponentProps};
 
 use crate::component::{ComponentCall, CustomHtmlTag, CustomHtmlTagError};
+use crate::{get_substr_range, offset_range, MdComponentAttribute};
 
 // load the default syntect options to highlight code
 lazy_static::lazy_static! {
@@ -282,7 +283,7 @@ where
     /// In any other cases, render the string as raw html.
     ///
     /// TODO: document (and fix?) how this behaves if given an open tag and not a closing one.
-    fn html(&mut self, raw_html: &str, _range: Range<usize>) -> Result<F::View, HtmlError> {
+    fn html(&mut self, raw_html: &str, range: Range<usize>) -> Result<F::View, HtmlError> {
         // TODO: refactor
 
         match &self.current_component {
@@ -293,7 +294,7 @@ where
                         "please make sure there is a newline before the end of your component",
                     ));
                 }
-                match CustomHtmlTag::from_str(raw_html) {
+                match CustomHtmlTag::from_str(raw_html, range.start) {
                     Ok(CustomHtmlTag::End(name)) if &name == current_name => {
                         Ok(self.next().unwrap_or(self.cx.el_empty()))
                     }
@@ -309,7 +310,7 @@ where
                 // If so, render it accordingly (as the component or error).
                 // Otherwise fall through to the catch all inline html case below.
                 if can_be_custom_component(raw_html) {
-                    match CustomHtmlTag::from_str(raw_html) {
+                    match CustomHtmlTag::from_str(raw_html, range.start) {
                         Ok(CustomHtmlTag::Inline(s)) => {
                             if self.cx.has_custom_component(&s.name) {
                                 return self.custom_component_inline(s);
@@ -352,10 +353,20 @@ where
     }
 
     /// Convert attributes from [ComponentCall] format to [MdComponentProps] format.
-    fn convert_attributes(input: BTreeMap<&str, &str>) -> BTreeMap<String, String> {
+    fn convert_attributes(input: ComponentCall) -> BTreeMap<String, MdComponentAttribute> {
         // TODO: this should probably unescape the attribute values.
-        // TODO: MdComponentProps should be updated to have a way to store the range information, which should be preserved.
-        BTreeMap::from_iter(input.iter().map(|(k, v)| (k.to_string(), v.to_string())))
+        BTreeMap::from_iter(input.attributes.iter().map(|(k, v)| {
+            (
+                k.to_string(),
+                MdComponentAttribute {
+                    value: v.to_string(),
+                    range: offset_range(
+                        get_substr_range(input.full_string, v).unwrap(),
+                        input.range_offset,
+                    ),
+                },
+            )
+        }))
     }
 
     /// Renders a custom component with children.
@@ -377,7 +388,7 @@ where
         let children = self.cx.el_fragment(sub_renderer.collect());
 
         let props = MdComponentProps {
-            attributes: Self::convert_attributes(description.attributes),
+            attributes: Self::convert_attributes(description),
             children,
         };
 
@@ -401,7 +412,7 @@ where
         }
 
         let props = MdComponentProps {
-            attributes: Self::convert_attributes(description.attributes),
+            attributes: Self::convert_attributes(description),
             children: self.cx.el_empty(),
         };
 

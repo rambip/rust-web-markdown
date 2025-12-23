@@ -4,6 +4,11 @@ use std::collections::BTreeMap;
 /// a custom non-native html element
 /// called inside markdown
 pub struct ComponentCall<'a> {
+    /// Where in the larger document full_string starts.
+    pub range_offset: usize,
+    /// Full string which is parsed into this component.
+    pub full_string: &'a str,
+    /// Name from the parsed tag.
     pub name: &'a str,
     /// The attribute values may contain escape codes: it is up to to the consumer of this string to do un-escaping if required.
     pub attributes: BTreeMap<&'a str, &'a str>,
@@ -96,7 +101,10 @@ impl CustomHtmlTag<'_> {
     /// Parse an Html Tag.
     /// This only supports the [Double-quoted attribute value syntax](https://www.w3.org/TR/2014/REC-html5-20141028/syntax.html#syntax-attributes)
     /// and does not robustly validate things like invalid characters in attribute names.
-    pub fn from_str(s: &'_ str) -> Result<CustomHtmlTag<'_>, CustomHtmlTagError> {
+    pub fn from_str(
+        s: &'_ str,
+        range_offset: usize,
+    ) -> Result<CustomHtmlTag<'_>, CustomHtmlTagError> {
         let mut s2 = s;
         let mut stream = &mut s2;
         parse_expect_character(stream, '<', "expected <").map_err(|e| CustomHtmlTagError {
@@ -130,12 +138,24 @@ impl CustomHtmlTag<'_> {
             *stream = stream.trim_start();
             match stream.chars().nth(0) {
                 None => return err("expected end of tag".into()),
-                Some('/') => return Ok(CustomHtmlTag::Inline(ComponentCall { name, attributes })),
+                Some('/') => {
+                    return Ok(CustomHtmlTag::Inline(ComponentCall {
+                        name,
+                        attributes,
+                        full_string: s,
+                        range_offset,
+                    }))
+                }
                 Some('>') => {
                     return if is_closing_tag {
                         Ok(CustomHtmlTag::End(name))
                     } else {
-                        Ok(CustomHtmlTag::Start(ComponentCall { name, attributes }))
+                        Ok(CustomHtmlTag::Start(ComponentCall {
+                            name,
+                            attributes,
+                            full_string: s,
+                            range_offset,
+                        }))
                     }
                 }
                 _ => {
@@ -157,49 +177,58 @@ mod test {
 
     #[test]
     fn parse_start() {
-        let c: CustomHtmlTag = CustomHtmlTag::from_str("<a>").unwrap();
+        let full_string = "<a>";
+        let c: CustomHtmlTag = CustomHtmlTag::from_str(full_string, 0).unwrap();
         assert_eq!(
             c,
             Start(ComponentCall {
-                name: "a".into(),
+                name: &full_string[1..2],
                 attributes: [].into(),
+                range_offset: 0,
+                full_string
             },)
         )
     }
 
     #[test]
     fn parse_end() {
-        let c: CustomHtmlTag = CustomHtmlTag::from_str("</a>").unwrap();
+        let c: CustomHtmlTag = CustomHtmlTag::from_str("</a>", 0).unwrap();
         assert_eq!(c, End("a".into()))
     }
 
     #[test]
     fn parse_inline_empty() {
-        let c: CustomHtmlTag = CustomHtmlTag::from_str("<a/>").unwrap();
+        let full_string = "<a/>";
+        let c: CustomHtmlTag = CustomHtmlTag::from_str(full_string, 0).unwrap();
         assert_eq!(
             c,
             Inline(ComponentCall {
-                name: "a".into(),
+                name: &full_string[1..2],
                 attributes: [].into(),
+                range_offset: 0,
+                full_string
             },)
         )
     }
 
     #[test]
     fn parse_inline() {
-        let c: CustomHtmlTag = CustomHtmlTag::from_str("<a key=\"val\"/>").unwrap();
+        let full_string = "<a key=\"val\"/>";
+        let c: CustomHtmlTag = CustomHtmlTag::from_str(full_string, 1).unwrap();
         assert_eq!(
             c,
             Inline(ComponentCall {
-                name: "a".into(),
-                attributes: BTreeMap::from([("key".into(), "val".into())])
+                name: &full_string[1..2],
+                attributes: BTreeMap::from([(&full_string[3..6], &full_string[8..11])]),
+                range_offset: 1,
+                full_string
             },)
         )
     }
 
     #[test]
     fn parse_error() {
-        let c: Result<CustomHtmlTag, CustomHtmlTagError> = CustomHtmlTag::from_str("<a x>");
+        let c: Result<CustomHtmlTag, CustomHtmlTagError> = CustomHtmlTag::from_str("<a x>", 0);
         match c {
             Ok(_) => panic!(),
             Err(CustomHtmlTagError {

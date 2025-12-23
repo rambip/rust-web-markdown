@@ -12,6 +12,10 @@ pub use web_framework_markdown::{
 
 use dioxus::prelude::*;
 
+mod substring;
+
+pub use substring::ReadWriteBox;
+
 pub type HtmlCallback<T> = Callback<T, Element>;
 
 #[cfg(feature = "debug")]

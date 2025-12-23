@@ -1,13 +1,20 @@
+use std::fmt::Display;
+
 use dioxus::prelude::*;
 use dioxus_markdown::*;
 
 static MARKDOWN_SOURCE: &str = r#"
 ## Here is a counter:
-<Counter initial="5"/>
+<EphemeralCounter initial="5"/>
 
-<Counter initial="a"/>
+An invalid counter:
+<EphemeralCounter initial="a"/>
 
-<Counter/>
+A defaulted counter:
+<EphemeralCounter/>
+
+A counter which modifies the document:
+<PersistedCounter value="5"/>
 
 ## Here is a Box:
 <box>
@@ -17,15 +24,31 @@ static MARKDOWN_SOURCE: &str = r#"
 </box>
 "#;
 
+/// A counter who's current count is not stored in the document.
 #[component]
-fn Counter(initial: i32) -> Element {
-    let mut count = use_signal(|| initial);
+fn EphemeralCounter(initial: i32) -> Element {
+    let count = use_signal(|| initial);
+    counter_inner_signal(count)
+}
 
+/// A counter who's current count is stored in the document.
+#[component]
+fn PersistedCounter(count: ReadWriteBox<i32>) -> Element {
+    counter_inner_signal(count)
+}
+
+/// Internals of counter, which can be provided the count in a signal like value.
+fn counter_inner_signal<T>(mut count: T) -> Element
+where
+    T: Clone + Display + std::ops::SubAssign<i32> + std::ops::AddAssign<i32> + 'static,
+{
+    // This supports non-copy values to support ReadWriteBox, so unlike with Signal, a clone is needed here.
+    let mut count2 = count.clone();
     rsx! {
         div {
             button { onclick: move |_| count -= 1, "-" }
             "{count}"
-            button { onclick: move |_| count += 1, "+" }
+            button { onclick: move |_| count2 += 1, "+" }
         }
     }
 }
@@ -41,9 +64,19 @@ fn ColorBox(children: Element) -> Element {
 fn App() -> Element {
     let mut components = CustomComponents::new();
 
-    components.register("Counter", |props| {
+    let src = use_signal(|| MARKDOWN_SOURCE.to_string());
+
+    components.register("EphemeralCounter", |props| {
         Ok(rsx! {
-            Counter { initial: props.get_parsed_optional("initial")?.unwrap_or(0) }
+            EphemeralCounter { initial: props.get_parsed_optional("initial")?.unwrap_or(0) }
+        })
+    });
+
+    components.register("PersistedCounter", move |props| {
+        let value = props.get_attribute("value").unwrap();
+        let count = ReadWriteBox::from_sub_string(src, value.range)?;
+        Ok(rsx! {
+            PersistedCounter { count }
         })
     });
 
@@ -56,10 +89,10 @@ fn App() -> Element {
 
     rsx! {
         h1 { "Source" }
-        Markdown { src: "```md\n{MARKDOWN_SOURCE}\n``" }
+        Markdown { src: "```md\n{src}\n```" }
 
         h1 { "Result" }
-        Markdown { src: MARKDOWN_SOURCE, components }
+        Markdown { src: src, components }
     }
 }
 
@@ -120,6 +153,11 @@ mod tests {
     fn components() -> CustomComponents {
         let mut components = CustomComponents::new();
         components.register("X", |_props| Ok(rsx! { "Content" }));
+        components.register("Place", |props| {
+            let test = props.get_attribute("test").unwrap();
+            let range = test.range;
+            Ok(rsx! { "{range.start},{range.end}" })
+        });
         components
     }
 
@@ -283,6 +321,21 @@ mod tests {
                         span { style: "", class: "", "Z" }
                     }
                 },
+            )
+        });
+    }
+
+    #[test]
+    fn parameter_range() {
+        static SRC: &'static str = " <Place  test=\"abc\"/>";
+        test_hook_simple(move || {
+            let expected = 15..18;
+            assert_eq!(&SRC[expected.clone()], "abc");
+            assert_rsx_eq!(
+                rsx! {
+                    Markdown { src: SRC, components: components() }
+                },
+                rsx! {span {style: "", class: "", " "} "{expected.start},{expected.end}"},
             )
         });
     }
