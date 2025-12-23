@@ -22,9 +22,14 @@ impl SubString {
         str.replace_range(self.range.clone(), sub);
     }
 
-    fn read(&self) -> String {
+    /// Read the substring content.
+    ///
+    /// TODO:
+    /// If the lifetimes could be worked out, having this be `read` and return
+    /// &str or `impl Deref<str>` would probably be better, but for now this works fine.
+    fn map<Out>(&self, f: impl Fn(&str) -> Out) -> Out {
         let str = self.s.read();
-        str[self.range.clone()].to_string()
+        f(&str[self.range.clone()])
     }
 }
 
@@ -36,12 +41,9 @@ struct ParsedSubString<T> {
     current: T,
 }
 
-impl<T> ReadWrite<T> for ParsedSubString<T>
-where
-    T: Clone + ToString,
-{
-    fn read_value(&self) -> T {
-        self.current.clone()
+impl<T: ToString> ReadWrite<T> for ParsedSubString<T> {
+    fn read_value(&self) -> &T {
+        &self.current
     }
 
     fn write_value(&self, t: T) {
@@ -50,8 +52,10 @@ where
     }
 }
 
+/// Like a signal, but supports outputting derived data
+/// so long writes can be transformed back to corresponding changes to the original data source.
 trait ReadWrite<T> {
-    fn read_value(&self) -> T;
+    fn read_value(&self) -> &T;
     fn write_value(&self, t: T);
 }
 
@@ -68,7 +72,7 @@ impl<T> PartialEq for ReadWriteBox<T> {
 }
 
 impl<T> ReadWriteBox<T> {
-    pub fn read_value(&self) -> T {
+    pub fn read_value(&self) -> &T {
         self.content.read_value()
     }
 
@@ -80,7 +84,7 @@ impl<T> ReadWriteBox<T> {
 impl<T: Clone + FromStr + Display + 'static> ReadWriteBox<T> {
     pub fn from_sub_string(s: Signal<String>, range: Range<usize>) -> Result<Self, T::Err> {
         let sub = { SubString { s, range } };
-        let current = T::from_str(&sub.read())?;
+        let current = sub.map(T::from_str)?;
         let inner = ParsedSubString { current, sub };
         Ok(ReadWriteBox {
             content: Rc::new(inner),
@@ -88,13 +92,19 @@ impl<T: Clone + FromStr + Display + 'static> ReadWriteBox<T> {
     }
 }
 
-impl<T: std::ops::Sub<T, Output = T> + Clone> std::ops::SubAssign<T> for ReadWriteBox<T> {
+impl<T> std::ops::SubAssign<T> for ReadWriteBox<T>
+where
+    for<'a> &'a T: std::ops::Sub<T, Output = T>,
+{
     fn sub_assign(&mut self, rhs: T) {
         self.write_value(self.read_value() - rhs);
     }
 }
 
-impl<T: std::ops::Add<T, Output = T> + Clone> std::ops::AddAssign<T> for ReadWriteBox<T> {
+impl<T> std::ops::AddAssign<T> for ReadWriteBox<T>
+where
+    for<'a> &'a T: std::ops::Add<T, Output = T>,
+{
     fn add_assign(&mut self, rhs: T) {
         self.write_value(self.read_value() + rhs);
     }
