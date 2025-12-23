@@ -3,8 +3,6 @@ use std::fmt::Display;
 use dioxus::prelude::*;
 use dioxus_markdown::*;
 
-mod substring;
-
 static MARKDOWN_SOURCE: &str = r#"
 ## Here is a counter:
 <EphemeralCounter initial="5"/>
@@ -35,7 +33,7 @@ fn EphemeralCounter(initial: i32) -> Element {
 
 /// A counter who's current count is stored in the document.
 #[component]
-fn PersistedCounter(count: substring::ReadWriteBox<i32>) -> Element {
+fn PersistedCounter(count: ReadWriteBox<i32>) -> Element {
     counter_inner_signal(count)
 }
 
@@ -76,7 +74,7 @@ fn App() -> Element {
 
     components.register("PersistedCounter", move |props| {
         let value = props.get_attribute("value").unwrap();
-        let count = substring::ReadWriteBox::from_sub_string(src, value.range)?;
+        let count = ReadWriteBox::from_sub_string(src, value.range)?;
         Ok(rsx! {
             PersistedCounter { count }
         })
