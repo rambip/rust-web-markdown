@@ -24,7 +24,7 @@ jobs:
       - name: Check if code compiles
         run: cargo check --all-features
 
-  check:
+  test:
     name: Run Tests
     runs-on: ubuntu-latest
     steps:
