@@ -376,10 +376,6 @@ pub(crate) fn get_substr_range(parent: &str, inner: &str) -> Option<Range<usize>
     let a = parent.as_ptr().addr();
     let b = inner.as_ptr().addr();
 
-    if inner.len() == 0 {
-        panic!("Zero length inner strings are not supported in get_substr_range to reduce risk of incompatibility with substr_range once stabilized")
-    }
-
     if b < a {
         return None;
     }
@@ -425,5 +421,11 @@ mod test {
         assert_eq!(get_substr_range(s, s2), None);
         assert_eq!(get_substr_range(s2, s), None);
         assert_eq!(get_substr_range(s, &s2[0..1]), None);
+    }
+
+    #[test]
+    fn get_substring_range_empty() {
+        let s = "<adc>";
+        check_range(s, 1..1);
     }
 }
