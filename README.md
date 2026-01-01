@@ -42,11 +42,12 @@ PRs are **very much** appreciated.
 
 ## 0.1.0
 
- - Include crate README.
- - Require use of methods to access contents of `MdComponentProps`'s attributes.
+- Mark `ElementAttributes` as `non_exhaustive` so future changes can add more attributes as a non breaking change.
+- Include crate README.
+- Require use of methods to access contents of `MdComponentProps`'s attributes.
     This also removes the ability fore consumers to directly construct a  `MdComponentProps` instance.
- - Expose the location of `MdComponentProps` attributes in the source as a range.
- - `HtmlError` has been removed from the package API.
+- Expose the location of `MdComponentProps` attributes in the source as a range.
+- `HtmlError` has been removed from the package API.
 - Replace `katex`with `katex-rs` for math rendering, improving performance and platform support.
 - Fix empty crash on empty codeblocks.
 - Add opt out for preserving html.

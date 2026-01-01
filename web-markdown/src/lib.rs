@@ -9,6 +9,7 @@ use render::Renderer;
 
 mod component;
 
+#[non_exhaustive]
 pub struct ElementAttributes<H> {
     pub classes: Vec<String>,
     pub style: Option<String>,
