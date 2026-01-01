@@ -30,12 +30,10 @@ pub struct MarkdownMouseEvent {
 /// component store.
 /// It is called when therer is a `<CustomComponent>` inside the markdown source.
 /// It is basically a hashmap but more efficient for a small number of items
-#[derive(PartialEq, Clone)]
-#[derive(Default)]
+#[derive(PartialEq, Clone, Default)]
 pub struct CustomComponents(
     BTreeMap<&'static str, Callback<MdComponentProps, Result<Html, ComponentCreationError>>>,
 );
-
 
 impl CustomComponents {
     pub fn new() -> Self {
