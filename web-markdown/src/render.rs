@@ -143,7 +143,7 @@ fn render_maths<'a, 'callback, F: Context<'a, 'callback>>(
     _display_mode: MathMode,
     _range: Range<usize>,
 ) -> Result<F::View, HtmlError> {
-    Err(HtmlError::UnAvailable(
+    Err(HtmlError::Unavailable(
         "Math was not enabled during compilation of the library. Please unable the `maths` feature"
             .into(),
     ))

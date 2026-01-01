@@ -1022,7 +1022,7 @@ dependencies = [
 
 [[package]]
 name = "dioxus-markdown"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "dioxus",
  "web-framework-markdown",
@@ -2295,7 +2295,7 @@ dependencies = [
 
 [[package]]
 name = "leptos-markdown"
-version = "0.6.1"
+version = "0.7.0"
 dependencies = [
  "leptos",
  "wasm-bindgen",
@@ -4549,7 +4549,7 @@ dependencies = [
 
 [[package]]
 name = "web-framework-markdown"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "katex-rs",
  "lazy_static",
@@ -4940,7 +4940,7 @@ dependencies = [
 
 [[package]]
 name = "yew-markdown"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "log",
  "wasm-bindgen",

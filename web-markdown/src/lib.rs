@@ -216,12 +216,13 @@ pub struct LinkDescription<V> {
     pub image: bool,
 }
 
-pub enum HtmlError {
+#[allow(dead_code)]
+pub(crate) enum HtmlError {
     NotImplemented(String),
     Link(String),
     Syntax(String),
     CustomComponent { name: String, msg: String },
-    UnAvailable(String),
+    Unavailable(String),
     Math,
 }
 
@@ -235,7 +236,7 @@ impl ToString for HtmlError {
             }
             HtmlError::Syntax(s) => format!("syntax error: {s}"),
             HtmlError::Link(s) => format!("invalid link: {s}"),
-            HtmlError::UnAvailable(s) => s.to_string(),
+            HtmlError::Unavailable(s) => s.to_string(),
         }
     }
 }
@@ -262,10 +263,11 @@ impl ToString for HtmlError {
 /// }
 /// ```
 pub struct MdComponentProps<V> {
-    pub attributes: BTreeMap<String, MdComponentAttribute>,
+    attributes: BTreeMap<String, MdComponentAttribute>,
     pub children: V,
 }
 
+#[non_exhaustive]
 #[derive(PartialEq, Clone)]
 pub struct MdComponentAttribute {
     pub value: String,
@@ -314,9 +316,9 @@ impl<V> MdComponentProps<V> {
     }
 }
 
-/// error raised by the user of the library,
+/// Error raised by the user of the library,
 /// when creating a component.
-/// It is automatically converted from any type of error
+/// It is automatically converted from any type of error.
 pub struct ComponentCreationError(String);
 
 impl<T: std::fmt::Debug> From<T> for ComponentCreationError {

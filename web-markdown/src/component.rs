@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
+/// A custom non-native html element
+/// defined inside markdown.
 #[derive(Debug, PartialEq)]
-/// a custom non-native html element
-/// called inside markdown
 pub struct ComponentCall<'a> {
     /// Where in the larger document full_string starts.
     pub range_offset: usize,
@@ -14,8 +14,8 @@ pub struct ComponentCall<'a> {
     pub attributes: BTreeMap<&'a str, &'a str>,
 }
 
+/// An html tag, used to create a custom component.
 #[derive(Debug, PartialEq)]
-/// An html tag, used to create a custom component
 pub enum CustomHtmlTag<'a> {
     /// <Component key="value"/>
     Inline(ComponentCall<'a>),

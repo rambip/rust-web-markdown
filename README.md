@@ -1,4 +1,4 @@
-# Goal
+# web-framework-markdown
 
 This crate is a work in progress to create libraries to render markdown for the main rust web frameworks:
 
@@ -37,3 +37,17 @@ see [here](https://rambip.github.io/rust-web-markdown/custom-components)
 # Contribute
 
 PRs are **very much** appreciated.
+
+# Changelog
+
+## 0.1.0
+
+ - Include crate README.
+ - Require use of methods to access contents of `MdComponentProps`'s attributes.
+    This also removes the ability fore consumers to directly construct a  `MdComponentProps` instance.
+ - Expose the location of `MdComponentProps` attributes in the source as a range.
+ - `HtmlError` has been removed from the package API.
+- Replace `katex`with `katex-rs` for math rendering, improving performance and platform support.
+- Fix empty crash on empty codeblocks.
+- Add opt out for preserving html.
+- Documentation improvements.

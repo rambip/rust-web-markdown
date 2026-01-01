@@ -26,7 +26,7 @@ pub struct MarkdownMouseEvent {
     /// the original mouse event triggered when a text element was clicked on
     pub mouse_event: MouseEvent,
 
-    /// the corresponding range in the markdown source, as a slice of [`u8`][u8]
+    /// The corresponding range in the markdown source, as a slice of [u8].
     pub position: Range<usize>,
     // TODO: add a clonable tag for the type of the element
     // pub tag: pulldown_cmark::Tag<'a>,
@@ -265,7 +265,7 @@ pub fn __Md(
     src: MaybeSignal<String>,
 
     /// the callback called when a component is clicked.
-    /// if you want to controll what happens when a link is clicked,
+    /// If you want to control what happens when a link is clicked,
     /// use [`render_links`][render_links]
     #[prop(optional, into)]
     on_click: Option<Callback<MarkdownMouseEvent>>,
