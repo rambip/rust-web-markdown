@@ -33,14 +33,14 @@ fn parse_attribute_value<'a>(stream: &mut &'a str) -> Result<&'a str, ParseError
     match stream.split_once('"') {
         Some((content, stream_new)) => {
             *stream = stream_new;
-            return Ok(content);
+            Ok(content)
         }
-        None => return Err("expected attribute value".into()),
+        None => Err("expected attribute value".into()),
     }
 }
 
-fn parse_expect_character<'a>(
-    stream: &mut &'a str,
+fn parse_expect_character(
+    stream: &mut &str,
     expected: char,
     error_message: &str,
 ) -> Result<(), ParseError> {
@@ -50,7 +50,7 @@ fn parse_expect_character<'a>(
     }
 }
 
-fn check_and_skip<'a>(stream: &mut &'a str, expected: char) -> bool {
+fn check_and_skip(stream: &mut &str, expected: char) -> bool {
     if stream.starts_with(expected) {
         // Skip over expected
         *stream = &stream[1..];
@@ -74,16 +74,16 @@ fn parse_attribute_name<'a>(stream: &mut &'a str) -> Result<&'a str, ParseError>
                         .into(),
                 );
             }
-            return Ok(name.trim());
+            Ok(name.trim())
         }
-        None => return Err("expected equal sign after attribute name".into()),
+        None => Err("expected equal sign after attribute name".into()),
     }
 }
 
 fn parse_attribute<'a>(stream: &mut &'a str) -> Result<(&'a str, &'a str), ParseError> {
     let name = parse_attribute_name(stream)?;
     // spaces
-    *stream = &stream.trim_start();
+    *stream = stream.trim_start();
     let attribute = parse_attribute_value(stream)?;
 
     Ok((name, attribute))
@@ -106,7 +106,7 @@ impl CustomHtmlTag<'_> {
         range_offset: usize,
     ) -> Result<CustomHtmlTag<'_>, CustomHtmlTagError> {
         let mut s2 = s;
-        let mut stream = &mut s2;
+        let stream = &mut s2;
         parse_expect_character(stream, '<', "expected <").map_err(|e| CustomHtmlTagError {
             name: None,
             message: e,
@@ -159,7 +159,7 @@ impl CustomHtmlTag<'_> {
                     }
                 }
                 _ => {
-                    let parsed = parse_attribute(&mut stream);
+                    let parsed = parse_attribute(stream);
                     match parsed {
                         Ok((name, value)) => attributes.insert(name, value),
                         Err(message) => return err(message),

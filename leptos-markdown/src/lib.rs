@@ -35,15 +35,10 @@ pub struct MarkdownMouseEvent {
 /// component store.
 /// It is called when therer is a `<CustomComponent>` inside the markdown source.
 /// It is basically a hashmap but more efficient for a small number of items
+#[derive(Default)]
 pub struct CustomComponents(
     BTreeMap<&'static str, Callback<MdComponentProps, Result<View, ComponentCreationError>>>,
 );
-
-impl Default for CustomComponents {
-    fn default() -> Self {
-        Self(Default::default())
-    }
-}
 
 impl CustomComponents {
     pub fn new() -> Self {
@@ -297,7 +292,6 @@ pub fn __Md(
 
     #[prop(optional, into)] frontmatter: Option<WriteSignal<String>>,
 ) -> impl IntoView {
-    ()
 }
 
 #[allow(non_snake_case)]

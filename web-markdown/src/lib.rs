@@ -279,7 +279,7 @@ impl<V> MdComponentProps<V> {
     /// returns the attribute string corresponding to the key `name`.
     /// returns None if the attribute was not provided
     pub fn get(&self, name: &str) -> Option<String> {
-        Self::get_attribute(&self, name).map(|a| a.value)
+        Self::get_attribute(self, name).map(|a| a.value)
     }
 
     pub fn get_attribute(&self, name: &str) -> Option<MdComponentAttribute> {
@@ -392,7 +392,7 @@ pub(crate) fn get_substr_range(parent: &str, inner: &str) -> Option<Range<usize>
         return None;
     }
 
-    return Some((start_of_inner_in_parent)..(start_of_inner_in_parent + inner.len()));
+    Some((start_of_inner_in_parent)..(start_of_inner_in_parent + inner.len()))
 }
 
 pub(crate) fn offset_range(range: Range<usize>, shift: usize) -> Range<usize> {

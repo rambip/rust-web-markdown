@@ -41,7 +41,7 @@ fn BlueBox(children: Children) -> impl IntoView {
     }
 }
 
-static MARKDOWN_SOURCE: &'static str = r#"
+static MARKDOWN_SOURCE: &str = r#"
 ## Here are a few counters:
 <Counter initial="5"/>
 
