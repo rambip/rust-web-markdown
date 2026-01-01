@@ -14,9 +14,6 @@ enum MathMode {
     Display,
 }
 
-#[cfg(feature = "maths")]
-use katex;
-
 use super::HtmlElement::*;
 use super::{Context, ElementAttributes, HtmlError, LinkDescription, MdComponentProps};
 
@@ -56,22 +53,20 @@ fn highlight_code(theme_name: Option<&str>, content: &str, kind: &CodeBlockKind)
         CodeBlockKind::Indented => return None,
     };
 
-    let theme_name = theme_name.clone().unwrap_or("base16-ocean.light");
+    let theme_name = theme_name.unwrap_or("base16-ocean.light");
     let theme = THEME_SET
         .themes
         .get(theme_name)
         .expect("unknown theme")
         .clone();
 
-    Some(
-        syntect::html::highlighted_html_for_string(
-            content,
-            &SYNTAX_SET,
-            SYNTAX_SET.find_syntax_by_token(lang)?,
-            &theme,
-        )
-        .ok()?,
+    syntect::html::highlighted_html_for_string(
+        content,
+        &SYNTAX_SET,
+        SYNTAX_SET.find_syntax_by_token(lang)?,
+        &theme,
     )
+    .ok()
 }
 
 /// renders a source code in a code block, with syntax highlighting if possible.
@@ -89,7 +84,7 @@ fn render_code_block<'a, 'callback, F: Context<'a, 'callback>>(
         ..Default::default()
     };
 
-    match highlight_code(cx.props().theme, &source, &k) {
+    match highlight_code(cx.props().theme, &source, k) {
         None => cx.el_with_attributes(
             Code,
             cx.el(Code, cx.el_text(source.into())),
@@ -143,7 +138,7 @@ fn render_maths<'a, 'callback, F: Context<'a, 'callback>>(
     _display_mode: MathMode,
     _range: Range<usize>,
 ) -> Result<F::View, HtmlError> {
-    Err(HtmlError::UnAvailable(
+    Err(HtmlError::Unavailable(
         "Math was not enabled during compilation of the library. Please unable the `maths` feature"
             .into(),
     ))
@@ -199,7 +194,7 @@ fn can_be_custom_component(raw_html: &str) -> bool {
         return false;
     };
     let (fst, middle, last) = (chars[0], &chars[1..len - 1], chars[len - 1]);
-    fst == '<' && last == '>' && middle.into_iter().all(|c| c != &'<' && c != &'>')
+    fst == '<' && last == '>' && middle.iter().all(|c| c != &'<' && c != &'>')
 }
 
 impl<'a, 'callback, 'c, I, F> Iterator for Renderer<'a, 'callback, 'c, I, F>
@@ -295,7 +290,7 @@ where
                     ));
                 }
                 match CustomHtmlTag::from_str(raw_html, range.start) {
-                    Ok(CustomHtmlTag::End(name)) if &name == current_name => {
+                    Ok(CustomHtmlTag::End(name)) if name == current_name => {
                         Ok(self.next().unwrap_or(self.cx.el_empty()))
                     }
                     Ok(_) => Err(HtmlError::component(
@@ -312,17 +307,17 @@ where
                 if can_be_custom_component(raw_html) {
                     match CustomHtmlTag::from_str(raw_html, range.start) {
                         Ok(CustomHtmlTag::Inline(s)) => {
-                            if self.cx.has_custom_component(&s.name) {
+                            if self.cx.has_custom_component(s.name) {
                                 return self.custom_component_inline(s);
                             }
                         }
                         Ok(CustomHtmlTag::End(name)) => {
-                            if self.cx.has_custom_component(&name) {
+                            if self.cx.has_custom_component(name) {
                                 return Err(HtmlError::component(name, "expected start, not end"));
                             }
                         }
                         Ok(CustomHtmlTag::Start(s)) => {
-                            if self.cx.has_custom_component(&s.name) {
+                            if self.cx.has_custom_component(s.name) {
                                 return self.custom_component(s);
                             }
                         }
@@ -371,7 +366,7 @@ where
 
     /// Renders a custom component with children.
     fn custom_component(&mut self, description: ComponentCall) -> Result<F::View, HtmlError> {
-        let name: &str = &description.name;
+        let name: &str = description.name;
         if !self.cx.has_custom_component(name) {
             return Err(HtmlError::component(name, "not a valid component"));
         }
@@ -406,7 +401,7 @@ where
         &mut self,
         description: ComponentCall,
     ) -> Result<F::View, HtmlError> {
-        let name: &str = &description.name;
+        let name: &str = description.name;
         if !self.cx.has_custom_component(name) {
             return Err(HtmlError::component(name, "not a valid component"));
         }

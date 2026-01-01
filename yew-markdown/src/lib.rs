@@ -21,25 +21,19 @@ pub struct MarkdownMouseEvent {
     /// the original mouse event triggered when a text element was clicked on
     pub mouse_event: MouseEvent,
 
-    /// the corresponding range in the markdown source, as a slice of [`u8`][u8]
+    /// The corresponding range in the markdown source, as a slice of [u8].
     pub position: Range<usize>,
     // TODO: add a clonable tag for the type of the element
     // pub tag: pulldown_cmark::Tag<'a>,
 }
 
 /// component store.
-/// It is called when therer is a `<CustomComponent>` inside the markdown source.
+/// It is called when there is a `<CustomComponent>` inside the markdown source.
 /// It is basically a hashmap but more efficient for a small number of items
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Default)]
 pub struct CustomComponents(
     BTreeMap<&'static str, Callback<MdComponentProps, Result<Html, ComponentCreationError>>>,
 );
-
-impl Default for CustomComponents {
-    fn default() -> Self {
-        Self(Default::default())
-    }
-}
 
 impl CustomComponents {
     pub fn new() -> Self {

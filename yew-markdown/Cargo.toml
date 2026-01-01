@@ -1,6 +1,6 @@
 [package]
 name = "yew-markdown"
-version = "0.0.1"
+version = "0.1.0"
 edition = "2021"
 license = "MIT"
 description = "A dynamic markdown component for the Yew framework"
@@ -14,7 +14,7 @@ wasm-bindgen = "0.2"
 wasm-logger = "0.2"
 log = "0.4"
 
-web-framework-markdown = { version = "0.0.1", path = "../web-markdown/" }
+web-framework-markdown = { version = "0.1.0", path = "../web-markdown/" }
 web-sys = { version = "0.3", features = [] }
 
 [features]

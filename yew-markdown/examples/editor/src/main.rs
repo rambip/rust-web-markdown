@@ -40,12 +40,12 @@ impl Component for App {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        let oninput = ctx.link().callback(|s| Msg::UpdateContent(s));
+        let oninput = ctx.link().callback(Msg::UpdateContent);
         let oninput_checkbox = ctx
             .link()
             .callback(|s: InputEvent| Msg::SetHardLineBreaks(get_value_from_checkbox(s)));
 
-        let send_debug_info = ctx.link().callback(|s| Msg::UpdateDebugInfo(s));
+        let send_debug_info = ctx.link().callback(Msg::UpdateDebugInfo);
         let debug_info = self.debug_info.iter().map(|x| html! {<li>{x}</li>});
 
         html! {

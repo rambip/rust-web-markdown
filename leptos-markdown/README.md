@@ -1,3 +1,5 @@
+# `leptos-markdown`
+
 A zero-config but extendable markdown component for [leptos](https://www.leptos.dev/).
 
 It supports [commonmark](https://commonmark.org/), and so much more.
@@ -67,5 +69,10 @@ Try it [here](https://rambip.github.io/rust-web-markdown-markdown/onclick)
 ## Custom components
 
 This feature is still very experimental.
-But there is an exemple [here](https://rambip.github.io/rust-web-markdown-markdown/custom_component)
+But there is an example [here](https://rambip.github.io/rust-web-markdown-markdown/custom_component)
 
+# Changelog
+
+## 0.7.0
+
+ - Update `web-framework-markdown` to `0.1`.
