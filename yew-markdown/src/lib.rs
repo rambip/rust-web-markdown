@@ -28,7 +28,7 @@ pub struct MarkdownMouseEvent {
 }
 
 /// component store.
-/// It is called when therer is a `<CustomComponent>` inside the markdown source.
+/// It is called when there is a `<CustomComponent>` inside the markdown source.
 /// It is basically a hashmap but more efficient for a small number of items
 #[derive(PartialEq, Clone, Default)]
 pub struct CustomComponents(
