@@ -368,7 +368,7 @@ pub fn markdown_component<'a, 'callback, F: Context<'a, 'callback>>(
         }
     }
 
-    let elements = Renderer::new(cx, &mut stream.into_iter()).collect::<Vec<_>>();
+    let elements = Renderer::new(cx, &mut stream.into_iter().peekable()).collect::<Vec<_>>();
 
     cx.el_fragment(elements)
 }

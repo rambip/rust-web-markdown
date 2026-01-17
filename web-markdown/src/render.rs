@@ -1,4 +1,6 @@
+use core::iter::Peekable;
 use core::ops::Range;
+use pulldown_cmark::CowStr;
 
 use core::marker::PhantomData;
 use std::collections::BTreeMap;
@@ -155,6 +157,13 @@ fn align_string(align: Alignment) -> &'static str {
     }
 }
 
+#[derive(Debug)]
+pub struct RenderEvent<'a> {
+    event: Event<'a>,
+    custom_tag: Option<CowStr<'a>>,
+    range: Range<usize>,
+}
+
 /// Manage the creation of a [`F::View`]
 /// from a stream of markdown events
 pub struct Renderer<'a, 'callback, 'c, I, F>
@@ -167,7 +176,7 @@ where
     /// the markdown context
     cx: F,
     /// the stream of markdown [`Event`]s
-    stream: &'c mut I,
+    stream: &'c mut Peekable<I>,
     /// the alignment settings inside the current table
     column_alignment: Option<Vec<Alignment>>,
     /// the current horizontal index of the cell we are in.
@@ -207,36 +216,66 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         use Event::*;
-        let (item, range): (Event<'a>, Range<usize>) = self.stream.next()?;
-        let range = range.clone();
-
         let cx = self.cx;
+        let render_event = self.next_render_event()?;
+        let range = render_event.range.clone();
 
-        let rendered = match item {
-            Start(t) => self.render_tag(t, range),
-            End(end) => {
-                // check if the closing tag is the tag that was open
-                // when this renderer was created
-                match self.end_tag {
-                    Some(t) if t == end => return None,
-                    Some(t) => panic!("{end:?} is a wrong closing tag, expected {t:?}"),
-                    None => panic!("didn't expect a closing tag"),
+        let rendered = if let Some(raw_html) = render_event.custom_tag {
+            let custom_tag = CustomHtmlTag::from_str(&raw_html, range.start);
+            match (custom_tag, &self.current_component) {
+                (Ok(CustomHtmlTag::Inline(s)), None) => self.custom_component_inline(s),
+                (Ok(CustomHtmlTag::End(s)), None) => {
+                    Err(HtmlError::component(s, "expected start, not end"))
                 }
+                (Ok(CustomHtmlTag::Start(s)), None) => self.custom_component(s),
+                (
+                    Err(CustomHtmlTagError {
+                        name: Some(name),
+                        message,
+                    }),
+                    _,
+                ) => Err(HtmlError::component(
+                    name,
+                    format!("not a valid component: {message}"),
+                )),
+                (
+                    Err(CustomHtmlTagError {
+                        name: None,
+                        message: _,
+                    }),
+                    _,
+                ) => Ok(self.html(&raw_html)),
+                (Ok(CustomHtmlTag::End(s)), Some(x)) if s == x => return None,
+                _ => Err(HtmlError::component("?", "invalid component")),
             }
-            Text(s) => Ok(cx.render_text(s, range)),
-            Code(s) => Ok(cx.render_code(s, range)),
-            InlineHtml(s) => self.html(&s, range),
-            Html(raw_html) => self.html(&raw_html, range),
-            FootnoteReference(_) => Err(HtmlError::not_implemented("footnotes refs")),
-            SoftBreak => Ok(cx.el_text(" ".into())),
-            HardBreak => Ok(self.cx.el_br()),
-            Rule => Ok(cx.render_rule(range)),
-            TaskListMarker(m) => Ok(cx.render_tasklist_marker(m, range)),
-            InlineMath(content) => render_maths(self.cx, &content, MathMode::Inline, range),
-            DisplayMath(content) => render_maths(self.cx, &content, MathMode::Display, range),
+        } else {
+            match render_event.event {
+                Start(t) => self.render_tag(t, range),
+                End(end) => {
+                    // check if the closing tag is the tag that was open
+                    // when this renderer was created
+                    match self.end_tag {
+                        Some(t) if t == end => return None,
+                        Some(t) => panic!("{end:?} is a wrong closing tag, expected {t:?}"),
+                        None => panic!("didn't expect a closing tag"),
+                    }
+                }
+                Text(s) => Ok(cx.render_text(s, range)),
+                Code(s) => Ok(cx.render_code(s, range)),
+                InlineHtml(s) => Ok(self.html(&s)),
+                Html(raw_html) => Ok(self.html(&raw_html)),
+                FootnoteReference(_) => Err(HtmlError::not_implemented("footnotes refs")),
+                SoftBreak => Ok(cx.el_text(" ".into())),
+                HardBreak => Ok(self.cx.el_br()),
+                Rule => Ok(cx.render_rule(range)),
+                TaskListMarker(m) => Ok(cx.render_tasklist_marker(m, range)),
+                InlineMath(content) => render_maths(self.cx, &content, MathMode::Inline, range),
+                DisplayMath(content) => render_maths(self.cx, &content, MathMode::Display, range),
+                _ => panic!(),
+            }
         };
 
-        Some(rendered.unwrap_or_else(|e| {
+        Some(rendered.unwrap_or_else(|e: HtmlError| {
             self.cx.el_with_attributes(
                 Span,
                 self.cx
@@ -258,7 +297,7 @@ where
 {
     /// creates a new renderer from a stream of events.
     /// It returns an iterator of [`F::View`]
-    pub fn new(cx: F, events: &'c mut I) -> Self {
+    pub fn new(cx: F, events: &'c mut Peekable<I>) -> Self {
         Self {
             __marker: PhantomData,
             cx,
@@ -270,81 +309,63 @@ where
         }
     }
 
-    /// Try to render `raw_html` as a custom component.
-    /// - If it looks like `<Component/>` and Component is registered,
-    ///     render the corresponding component.
-    /// - If it looks like `<Component>`, and Component is registered,
-    ///     extract markdown `<Component/>` is found.
-    /// In any other cases, render the string as raw html.
-    ///
-    /// TODO: document (and fix?) how this behaves if given an open tag and not a closing one.
-    fn html(&mut self, raw_html: &str, range: Range<usize>) -> Result<F::View, HtmlError> {
-        // TODO: refactor
-
-        match &self.current_component {
-            Some(current_name) => {
-                if self.end_tag.is_some() {
-                    return Err(HtmlError::component(
-                        raw_html,
-                        "please make sure there is a newline before the end of your component",
-                    ));
-                }
-                match CustomHtmlTag::from_str(raw_html, range.start) {
-                    Ok(CustomHtmlTag::End(name)) if name == current_name => {
-                        Ok(self.next().unwrap_or(self.cx.el_empty()))
+    fn next_render_event(&mut self) -> Option<RenderEvent<'a>> {
+        let (item, range): (Event<'a>, Range<usize>) = self.stream.next()?;
+        let custom_tag = if let Event::Start(Tag::HtmlBlock) = item {
+            let maybe_inside_event = self.stream.next_if(|(x, _)| match x {
+                Event::Html(raw_html) if can_be_custom_component(raw_html) => true,
+                _ => false,
+            });
+            match maybe_inside_event {
+                Some((Event::Html(raw_html), r)) => {
+                    match CustomHtmlTag::from_str(&raw_html, r.start) {
+                        Ok(CustomHtmlTag::Start(x)) if self.cx.has_custom_component(x.name) => {
+                            Some(raw_html)
+                        }
+                        Ok(CustomHtmlTag::End(name)) if self.cx.has_custom_component(name) => {
+                            Some(raw_html)
+                        }
+                        Ok(CustomHtmlTag::Inline(x)) if self.cx.has_custom_component(x.name) => {
+                            Some(raw_html)
+                        }
+                        _ => None,
                     }
-                    Ok(_) => Err(HtmlError::component(
-                        current_name,
-                        "expected end of component",
-                    )),
-                    Err(e) => Err(HtmlError::syntax(e.message)),
                 }
+                _ => None,
             }
-            None => {
-                // If making a new html tag, check if it has a name that is a valid custom component name.
-                // If so, render it accordingly (as the component or error).
-                // Otherwise fall through to the catch all inline html case below.
-                if can_be_custom_component(raw_html) {
-                    match CustomHtmlTag::from_str(raw_html, range.start) {
-                        Ok(CustomHtmlTag::Inline(s)) => {
-                            if self.cx.has_custom_component(s.name) {
-                                return self.custom_component_inline(s);
-                            }
-                        }
-                        Ok(CustomHtmlTag::End(name)) => {
-                            if self.cx.has_custom_component(name) {
-                                return Err(HtmlError::component(name, "expected start, not end"));
-                            }
-                        }
-                        Ok(CustomHtmlTag::Start(s)) => {
-                            if self.cx.has_custom_component(s.name) {
-                                return self.custom_component(s);
-                            }
-                        }
-                        Err(CustomHtmlTagError {
-                            name: Some(name),
-                            message,
-                        }) => {
-                            if self.cx.has_custom_component(&name) {
-                                return Err(HtmlError::component(
-                                    name,
-                                    format!("not a valid component: {message}"),
-                                ));
-                            }
-                        }
-                        // Component did not parse as a custom component far enough to get a name, so fall through to raw html.
-                        Err(CustomHtmlTagError {
-                            name: None,
-                            message: _,
-                        }) => {}
-                    };
-                }
-                // Not a custom component, so render html as is without and parsing/validation.
-                Ok(self
-                    .cx
-                    .el_span_with_inner_html(raw_html.to_string(), Default::default()))
-            }
+        } else {
+            None
+        };
+        if custom_tag.is_some() {
+            assert!(matches!(
+                self.stream.next(),
+                Some((Event::End(TagEnd::HtmlBlock), _))
+            ));
+            Some(RenderEvent {
+                event: item,
+                custom_tag,
+                range: range,
+            })
+        } else {
+            Some(match item {
+                Event::InlineHtml(ref x) => RenderEvent {
+                    // FIXME: avoid clone
+                    custom_tag: Some(x.clone()),
+                    event: item,
+                    range,
+                },
+                _ => RenderEvent {
+                    event: item,
+                    custom_tag: None,
+                    range,
+                },
+            })
         }
+    }
+
+    fn html(&mut self, raw_html: &str) -> F::View {
+        self.cx
+            .el_span_with_inner_html(raw_html.to_string(), Default::default())
     }
 
     /// Convert attributes from [ComponentCall] format to [MdComponentProps] format.
@@ -402,9 +423,6 @@ where
         description: ComponentCall,
     ) -> Result<F::View, HtmlError> {
         let name: &str = description.name;
-        if !self.cx.has_custom_component(name) {
-            return Err(HtmlError::component(name, "not a valid component"));
-        }
 
         let props = MdComponentProps {
             attributes: Self::convert_attributes(description),
