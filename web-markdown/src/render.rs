@@ -234,23 +234,14 @@ fn can_be_custom_component(raw_html: &str) -> bool {
         // Tags with attributes: <MyComponent attr="value"> or <my-component attr="value"/>
         // After the tag name, we must have whitespace followed by content that contains '='
         // This rejects things like "<Y and Y>" where there's no '='
+        // Note: The regex is non-greedy and will match the smallest possible string,
+        // so escaped characters like &lt; or &gt; in attributes are allowed
         static ref WITH_ATTRS_RE: regex::Regex = regex::Regex::new(
-            r"^</?([A-Z][A-Za-z0-9-]*|[a-z][A-Za-z0-9]*-[A-Za-z0-9-]*)\s+[^<>]*=[^<>]*/?\s*>$"
+            r"^</?([A-Z][A-Za-z0-9-]*|[a-z][A-Za-z0-9]*-[A-Za-z0-9-]*)\s+.*?=.*?/?\s*>$"
         ).unwrap();
     }
 
     let s = raw_html.trim();
-
-    // Check basic structure: no < or > in the middle (except at start and end)
-    if s.len() < 3 || !s.starts_with('<') || !s.ends_with('>') {
-        return false;
-    }
-
-    // Check for < or > in the middle
-    let middle = &s[1..s.len() - 1];
-    if middle.contains('<') || middle.contains('>') {
-        return false;
-    }
 
     // Try to match with regex patterns
     SIMPLE_TAG_RE.is_match(s) || SELF_CLOSING_RE.is_match(s) || WITH_ATTRS_RE.is_match(s)

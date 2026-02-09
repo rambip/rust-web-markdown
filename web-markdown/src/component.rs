@@ -9,7 +9,7 @@ use std::collections::BTreeMap;
 ///
 /// ### Valid Custom Component Names
 ///
-/// A tag name is considered a custom component if it meets ONE of these criteria:
+/// A tag name is considered a custom component if it meets exactly one of these criteria:
 ///
 /// 1. **Starts with an uppercase letter (A-Z)**
 ///    - Examples: `<MyComponent>`, `<Counter>`, `<DataTable>`
@@ -19,20 +19,9 @@ use std::collections::BTreeMap;
 ///    - Examples: `<my-component>`, `<data-table>`, `<custom-counter>`
 ///    - The dash distinguishes these from standard HTML tags
 ///
-/// ### Why These Rules?
-///
-/// These rules ensure that standard HTML tags (like `<div>`, `<span>`, `<p>`, etc.)
-/// are never confused with custom components, since they:
-/// - Start with lowercase letters
-/// - Do NOT contain dashes
-///
-/// ### Tag Syntax Support
-///
-/// Custom component tags support multiple syntaxes:
-/// - **Start tags**: `<MyComponent>`
-/// - **End tags**: `</MyComponent>`
-/// - **Self-closing tags**: `<MyComponent/>`
-/// - **Tags with attributes**: `<MyComponent key="value" name="test"/>`
+/// This ensures that standard HTML tags (like `<div>`, `<span>`, `<p>`) are never confused
+/// with custom components. Custom component tags support start tags, end tags, self-closing
+/// tags, and tags with attributes (e.g., `<MyComponent key="value" name="test"/>`).
 ///
 /// ### Examples
 ///
