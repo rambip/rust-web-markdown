@@ -296,6 +296,10 @@ where
                     match self.end_tag {
                         Some(t) if t == end => return None,
                         Some(t) => panic!("{end:?} is a wrong closing tag, expected {t:?}"),
+                        // HtmlBlock is a special case - it's not a real HTML tag, just a marker
+                        // for block-level HTML. When we're at the top level (end_tag is None),
+                        // we should skip End(HtmlBlock) events.
+                        None if matches!(end, TagEnd::HtmlBlock) => return self.next(),
                         None => panic!("didn't expect a closing tag"),
                     }
                 }
@@ -348,6 +352,49 @@ where
         }
     }
 
+    /// # Custom Component Event Stream Patterns
+    ///
+    /// pulldown-cmark emits different event sequences based on HTML context:
+    ///
+    /// ## Block-Level Self-Closing Tags (Single Component)
+    /// ```markdown
+    /// <MyComponent/>
+    /// ```
+    /// Events: `Start(HtmlBlock)` → `Html("<MyComponent/>")` → `End(HtmlBlock)`
+    ///
+    /// ## Multiple Components on Separate Lines
+    /// ```markdown
+    /// <Component1/>
+    /// <Component2/>
+    /// ```
+    /// Events (may vary):
+    /// - **Option 1** (separate blocks): `Start(HtmlBlock)` → `Html("<Component1/>")` → `End(HtmlBlock)` → `Start(HtmlBlock)` → `Html("<Component2/>")` → `End(HtmlBlock)`
+    /// - **Option 2** (single block): `Start(HtmlBlock)` → `Html("<Component1/>\n")` → `Html("<Component2/>")` → `End(HtmlBlock)`
+    ///
+    /// The actual behavior depends on pulldown-cmark's HTML block detection heuristics.
+    /// This code handles both cases by conditionally consuming `End(HtmlBlock)` only when present.
+    ///
+    /// ## Block-Level Open Tags (with closing)
+    /// ```markdown
+    /// <MyComponent>
+    /// content
+    /// </MyComponent>
+    /// ```
+    /// Events: `Start(HtmlBlock)` → `Html("<MyComponent>")` → ... content ... → `Html("</MyComponent>")` → `End(HtmlBlock)`
+    ///
+    /// ## Inline HTML (within paragraph)
+    /// ```markdown
+    /// text <MyComponent/> more text
+    /// ```
+    /// Events: `Start(Paragraph)` → `Text("text ")` → `InlineHtml("<MyComponent/>")` → `Text(" more text")` → `End(Paragraph)`
+    /// Note: NO `HtmlBlock` events for inline HTML
+    ///
+    /// ## Multiple Components on Same Line
+    /// ```markdown
+    /// <Component1/><Component2/>
+    /// ```
+    /// Events: `Start(Paragraph)` → `InlineHtml("<Component1/>")` → `InlineHtml("<Component2/>")` → `End(Paragraph)`
+    /// (Treated as inline HTML, not block-level)
     fn next_render_event(&mut self) -> Option<RenderEvent<'a>> {
         let (item, range): (Event<'a>, Range<usize>) = self.stream.next()?;
         let custom_tag = if let Event::Start(Tag::HtmlBlock) = item {
@@ -376,10 +423,18 @@ where
             None
         };
         if custom_tag.is_some() {
-            assert!(matches!(
-                self.stream.next(),
-                Some((Event::End(TagEnd::HtmlBlock), _))
-            ));
+            // Attempt to consume End(HtmlBlock) if present, but don't panic if missing.
+            // pulldown-cmark's event stream varies based on:
+            // - Self-closing tags like <X/> typically have: Start(HtmlBlock) -> Html -> End(HtmlBlock)
+            // - Open tags like <X> may not have an immediate End(HtmlBlock)
+            // - Inline HTML (InlineHtml event) never produces HtmlBlock events
+            // - Whitespace and newlines affect whether HTML is block-level or inline
+            let should_consume =
+                matches!(self.stream.peek(), Some((Event::End(TagEnd::HtmlBlock), _)));
+            if should_consume {
+                self.stream.next(); // consume the End event
+            }
+
             Some(RenderEvent {
                 event: item,
                 custom_tag,
@@ -388,6 +443,14 @@ where
         } else {
             Some(match item {
                 Event::InlineHtml(ref x) if can_be_custom_component(x) => RenderEvent {
+                    // FIXME: avoid clone
+                    custom_tag: Some(x.clone()),
+                    event: item,
+                    range,
+                },
+                Event::Html(ref x) if can_be_custom_component(x) => RenderEvent {
+                    // Handle Html events that are custom components but not preceded by Start(HtmlBlock)
+                    // This happens when multiple custom components are in the same HtmlBlock
                     // FIXME: avoid clone
                     custom_tag: Some(x.clone()),
                     event: item,
