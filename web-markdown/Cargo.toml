@@ -16,6 +16,7 @@ syntect = { version = "5.0.0", default-features = false, features = [
 ] }
 lazy_static = "1.4.0"
 pulldown-cmark = "0.13.0"
+regex = "1.12"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 katex-rs = { version = "0.2", optional = true }

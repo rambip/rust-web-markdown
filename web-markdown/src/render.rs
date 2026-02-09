@@ -213,108 +213,47 @@ where
 ///
 /// Invalid HTML like `<Y and Y>` is rejected because "and" is not valid attribute syntax.
 fn can_be_custom_component(raw_html: &str) -> bool {
+    lazy_static::lazy_static! {
+        // Regex patterns for custom component tags:
+
+        // Simple tags: <MyComponent> or </MyComponent> or <my-component> or </my-component>
+        // ^<                                       - starts with <
+        // /?                                       - optional / for closing tags
+        // ([A-Z][A-Za-z0-9-]*                      - uppercase start with optional alphanumeric and dashes
+        //  |[a-z][A-Za-z0-9]*-[A-Za-z0-9-]*)       - OR lowercase start with at least one dash
+        // >$                                       - ends with >
+        static ref SIMPLE_TAG_RE: regex::Regex = regex::Regex::new(
+            r"^</?([A-Z][A-Za-z0-9-]*|[a-z][A-Za-z0-9]*-[A-Za-z0-9-]*)>$"
+        ).unwrap();
+
+        // Self-closing tags: <MyComponent/> or <my-component/>
+        static ref SELF_CLOSING_RE: regex::Regex = regex::Regex::new(
+            r"^<([A-Z][A-Za-z0-9-]*|[a-z][A-Za-z0-9]*-[A-Za-z0-9-]*)/\s*>$"
+        ).unwrap();
+
+        // Tags with attributes: <MyComponent attr="value"> or <my-component attr="value"/>
+        // After the tag name, we must have whitespace followed by content that contains '='
+        // This rejects things like "<Y and Y>" where there's no '='
+        static ref WITH_ATTRS_RE: regex::Regex = regex::Regex::new(
+            r"^</?([A-Z][A-Za-z0-9-]*|[a-z][A-Za-z0-9]*-[A-Za-z0-9-]*)\s+[^<>]*=[^<>]*/?\s*>$"
+        ).unwrap();
+    }
+
     let s = raw_html.trim();
-    if s.len() < 3 {
+
+    // Check basic structure: no < or > in the middle (except at start and end)
+    if s.len() < 3 || !s.starts_with('<') || !s.ends_with('>') {
         return false;
     }
 
-    let chars: Vec<_> = s.chars().collect();
-    let len = chars.len();
-
-    // Must start with '<' and end with '>'
-    if chars[0] != '<' || chars[len - 1] != '>' {
+    // Check for < or > in the middle
+    let middle = &s[1..s.len() - 1];
+    if middle.contains('<') || middle.contains('>') {
         return false;
     }
 
-    // Check that there are no '<' or '>' characters in between
-    // This is a basic validity check that rejects malformed HTML like "<Y and Y>"
-    let middle = &chars[1..len - 1];
-    if middle.iter().any(|c| c == &'<' || c == &'>') {
-        return false;
-    }
-
-    // Extract tag name: skip '<' and optionally '/' for closing tags
-    let mut idx = 1;
-    if idx < chars.len() && chars[idx] == '/' {
-        idx += 1;
-    }
-
-    if idx >= chars.len() {
-        return false;
-    }
-
-    // Parse tag name until we hit whitespace, '/', or '>'
-    let mut tag_name = String::new();
-    while idx < chars.len() {
-        let c = chars[idx];
-        if c.is_whitespace() || c == '/' || c == '>' {
-            break;
-        }
-        tag_name.push(c);
-        idx += 1;
-    }
-
-    if tag_name.is_empty() {
-        return false;
-    }
-
-    // Check if tag name is valid for a custom component
-    let first_char = tag_name.chars().next().unwrap();
-    let has_dash = tag_name.contains('-');
-
-    // Valid if:
-    // - Starts with uppercase letter (A-Z), OR
-    // - Starts with lowercase letter (a-z) AND contains a dash
-    let is_custom_component_name = if first_char.is_ascii_uppercase() {
-        // Uppercase start is always valid (e.g., MyComponent, My-Component)
-        true
-    } else if first_char.is_ascii_lowercase() && has_dash {
-        // Lowercase start is only valid if it has a dash (e.g., my-component)
-        true
-    } else {
-        // Otherwise not a custom component (e.g., div, span, p)
-        false
-    };
-
-    if !is_custom_component_name {
-        return false;
-    }
-
-    // Additional validation: after the tag name, we should only see:
-    // - '>' (end of tag)
-    // - '/' followed by '>' (self-closing tag)
-    // - Whitespace followed by attributes (which should contain '=' for key=value)
-    // This helps reject invalid HTML like "<Y and Y>" where "and Y" is not valid syntax
-
-    // Skip to after tag name
-    while idx < len && tag_name.chars().count() > 0 {
-        let c = chars[idx];
-        if c.is_whitespace() {
-            // Skip whitespace
-            idx += 1;
-        } else if c == '>' {
-            // Valid: simple closing tag
-            return true;
-        } else if c == '/' {
-            // Check if it's followed by '>'
-            return idx + 1 < len && chars[idx + 1] == '>';
-        } else {
-            // Must be start of attributes
-            // For valid attributes, we expect to find '=' somewhere
-            // This is a simple heuristic to reject things like "<Y and Y>"
-            let remaining: String = chars[idx..len - 1].iter().collect();
-            if remaining.contains('=') || remaining.is_empty() {
-                // Looks like it might have attributes
-                return true;
-            } else {
-                // No '=' found, so probably not valid attribute syntax
-                // Example: "<Y and Y>" would have remaining = "and Y"
-                return false;
-            }
-        }
-    }
-
-    true
+    // Try to match with regex patterns
+    SIMPLE_TAG_RE.is_match(s) || SELF_CLOSING_RE.is_match(s) || WITH_ATTRS_RE.is_match(s)
 }
 
 impl<'a, 'callback, 'c, I, F> Iterator for Renderer<'a, 'callback, 'c, I, F>
