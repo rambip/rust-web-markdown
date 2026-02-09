@@ -644,3 +644,100 @@ where
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_can_be_custom_component_uppercase_start() {
+        // Uppercase start should always be valid
+        assert!(can_be_custom_component("<MyComponent>"));
+        assert!(can_be_custom_component("<Counter>"));
+        assert!(can_be_custom_component("<DataTable>"));
+        assert!(can_be_custom_component("<MyComponent/>"));
+        assert!(can_be_custom_component("</MyComponent>"));
+        assert!(can_be_custom_component("<MyComponent attr=\"value\">"));
+        assert!(can_be_custom_component("<My-Component>"));
+        assert!(can_be_custom_component("<MY-COMPONENT>"));
+    }
+
+    #[test]
+    fn test_can_be_custom_component_lowercase_with_dash() {
+        // Lowercase start with dash should be valid
+        assert!(can_be_custom_component("<my-component>"));
+        assert!(can_be_custom_component("<data-table>"));
+        assert!(can_be_custom_component("<custom-counter>"));
+        assert!(can_be_custom_component("<my-component/>"));
+        assert!(can_be_custom_component("</my-component>"));
+        assert!(can_be_custom_component("<my-component attr=\"value\">"));
+        assert!(can_be_custom_component("<a-b>"));
+        assert!(can_be_custom_component("<my-custom-widget>"));
+    }
+
+    #[test]
+    fn test_can_be_custom_component_lowercase_no_dash() {
+        // Lowercase start without dash should be invalid (standard HTML tags)
+        assert!(!can_be_custom_component("<div>"));
+        assert!(!can_be_custom_component("<span>"));
+        assert!(!can_be_custom_component("<p>"));
+        assert!(!can_be_custom_component("<section>"));
+        assert!(!can_be_custom_component("<article>"));
+        assert!(!can_be_custom_component("<header>"));
+        assert!(!can_be_custom_component("<footer>"));
+        assert!(!can_be_custom_component("<div/>"));
+        assert!(!can_be_custom_component("</div>"));
+        assert!(!can_be_custom_component("<div class=\"test\">"));
+    }
+
+    #[test]
+    fn test_can_be_custom_component_edge_cases() {
+        // Empty or invalid tags
+        assert!(!can_be_custom_component("<>"));
+        assert!(!can_be_custom_component("</>"));
+        assert!(!can_be_custom_component(""));
+        assert!(!can_be_custom_component("< >"));
+        assert!(!can_be_custom_component("text"));
+
+        // Missing brackets
+        assert!(!can_be_custom_component("MyComponent>"));
+        assert!(!can_be_custom_component("<MyComponent"));
+
+        // Whitespace handling
+        assert!(can_be_custom_component("  <MyComponent>  "));
+        assert!(can_be_custom_component("  <my-component>  "));
+        assert!(!can_be_custom_component("  <div>  "));
+    }
+
+    #[test]
+    fn test_can_be_custom_component_with_attributes() {
+        // With attributes
+        assert!(can_be_custom_component(
+            "<Counter initial=\"5\" step=\"1\"/>"
+        ));
+        assert!(can_be_custom_component(
+            "<my-widget data=\"test\" class=\"styled\"/>"
+        ));
+        assert!(!can_be_custom_component(
+            "<div class=\"container\" id=\"main\">"
+        ));
+    }
+
+    #[test]
+    fn test_can_be_custom_component_self_closing() {
+        // Self-closing tags
+        assert!(can_be_custom_component("<MyComponent/>"));
+        assert!(can_be_custom_component("<my-component/>"));
+        assert!(!can_be_custom_component("<div/>"));
+        assert!(!can_be_custom_component("<span/>"));
+    }
+
+    #[test]
+    fn test_can_be_custom_component_closing_tags() {
+        // Closing tags
+        assert!(can_be_custom_component("</MyComponent>"));
+        assert!(can_be_custom_component("</my-component>"));
+        assert!(!can_be_custom_component("</div>"));
+        assert!(!can_be_custom_component("</span>"));
+    }
+}
