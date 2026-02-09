@@ -339,4 +339,177 @@ mod tests {
             )
         });
     }
+
+    #[test]
+    fn component_with_proper_closing() {
+        // Test a component with both opening and closing tags with content between
+        test_hook_simple(|| {
+            let mut components = CustomComponents::new();
+            components.register("X", |props| {
+                let children = props.children;
+                Ok(rsx! { div { {children} } })
+            });
+            assert_rsx_eq!(
+                rsx! {
+                    Markdown { src: "<X>\ntext\n</X>", components }
+                },
+                rsx! {
+                    div {
+                        span { style: "", class: "", "text\n" }
+                    }
+                },
+            )
+        });
+    }
+
+    #[test]
+    fn block_component_with_attributes() {
+        // Test block-level component with attributes (no leading space)
+        test_hook_simple(|| {
+            let src = "<Place test=\"abc\"/>\n";
+            let expected = 13..16;
+            assert_eq!(&src[expected.clone()], "abc");
+            assert_rsx_eq!(
+                rsx! {
+                    Markdown { src: src, components: components() }
+                },
+                rsx! { "{expected.start},{expected.end}" },
+            )
+        });
+    }
+
+    #[test]
+    fn inline_component_in_paragraph() {
+        // Test inline component within a paragraph (not block-level)
+        test_hook_simple(|| {
+            assert_rsx_eq!(
+                rsx! {
+                    Markdown { src: "text <X/> more", components: components() }
+                },
+                rsx! {
+                    p { style: "", class: "",
+                        span { style: "", class: "", "text " }
+                        "Content"
+                        span { style: "", class: "", " more" }
+                    }
+                },
+            )
+        });
+    }
+
+    #[test]
+    fn multiple_inline_components_in_paragraph() {
+        // Test multiple inline components in the same paragraph
+        test_hook_simple(|| {
+            assert_rsx_eq!(
+                rsx! {
+                    Markdown { src: "text <X/> middle <X/> end", components: components() }
+                },
+                rsx! {
+                    p { style: "", class: "",
+                        span { style: "", class: "", "text " }
+                        "Content"
+                        span { style: "", class: "", " middle " }
+                        "Content"
+                        span { style: "", class: "", " end" }
+                    }
+                },
+            )
+        });
+    }
+
+    #[test]
+    fn three_components_on_separate_lines() {
+        // Test three components on separate lines to ensure End(HtmlBlock) handling is correct
+        test_hook_simple(|| {
+            assert_rsx_eq!(
+                rsx! {
+                    Markdown { src: "<X/>\n<X/>\n<X/>", components: components() }
+                },
+                rsx! { "ContentContentContent" },
+            )
+        });
+    }
+
+    #[test]
+    fn component_followed_by_paragraph() {
+        // Test that a block-level component followed by text works correctly
+        test_hook_simple(|| {
+            assert_rsx_eq!(
+                rsx! {
+                    Markdown { src: "<X/>\n\nParagraph text", components: components() }
+                },
+                rsx! {
+                    "Content"
+                    p { style: "", class: "",
+                        span { style: "", class: "", "Paragraph text" }
+                    }
+                },
+            )
+        });
+    }
+
+    #[test]
+    fn paragraph_followed_by_component() {
+        // Test that a paragraph followed by a block-level component works correctly
+        test_hook_simple(|| {
+            assert_rsx_eq!(
+                rsx! {
+                    Markdown { src: "Paragraph text\n\n<X/>", components: components() }
+                },
+                rsx! {
+                    p { style: "", class: "",
+                        span { style: "", class: "", "Paragraph text" }
+                    }
+                    "Content"
+                },
+            )
+        });
+    }
+
+    #[test]
+    fn component_with_markdown_content() {
+        // Test component containing markdown content
+        test_hook_simple(|| {
+            let mut components = CustomComponents::new();
+            components.register("X", |props| {
+                let children = props.children;
+                Ok(rsx! { div { class: "box", {children} } })
+            });
+            assert_rsx_eq!(
+                rsx! {
+                    Markdown { src: "<X>\n\n**bold text**\n\n</X>", components }
+                },
+                rsx! {
+                    div { class: "box",
+                        p { style: "", class: "",
+                            b { style: "", class: "",
+                                span { style: "", class: "", "bold text" }
+                            }
+                        }
+                    }
+                },
+            )
+        });
+    }
+
+    #[test]
+    fn mixed_block_and_inline_components() {
+        // Test mixing block-level and inline components
+        test_hook_simple(|| {
+            assert_rsx_eq!(
+                rsx! {
+                    Markdown { src: "<X/>\n\ntext <X/> more", components: components() }
+                },
+                rsx! {
+                    "Content"
+                    p { style: "", class: "",
+                        span { style: "", class: "", "text " }
+                        "Content"
+                        span { style: "", class: "", " more" }
+                    }
+                },
+            )
+        });
+    }
 }
