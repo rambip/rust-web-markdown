@@ -50,11 +50,11 @@ static MARKDOWN_SOURCE: &str = r#"
 <Counter initial="a"/>
 
 ## Here is a Box:
-<box>
+<custom-box>
 
 **I am in a blue box !**
 
-</box>
+</custom-box>
 "#;
 
 #[component]
@@ -67,7 +67,7 @@ fn App() -> impl IntoView {
         })
     });
 
-    components.register("box", |props| {
+    components.register("custom-box", |props| {
         Ok(view! {
             <BlueBox>{props.children}</BlueBox>
         })

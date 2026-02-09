@@ -10,11 +10,11 @@ static MARKDOWN_SOURCE: &str = r#"
 <Counter initial="a"/>
 
 ## Here is a Box:
-<box>
+<custom-box>
 
 **I am in a blue box !**
 
-</box>
+</custom-box>
 "#;
 
 #[derive(PartialEq, Properties)]
@@ -66,7 +66,9 @@ fn app() -> Html {
         <Counter initial={p.get_parsed_optional("initial")?} />})
     });
 
-    components.register("box", |p| Ok(html! {<BlueBox>{p.children}</BlueBox>}));
+    components.register("custom-box", |p| {
+        Ok(html! {<BlueBox>{p.children}</BlueBox>})
+    });
 
     html! {
         <div>
