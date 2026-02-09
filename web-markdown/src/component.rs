@@ -9,13 +9,13 @@ use std::collections::BTreeMap;
 ///
 /// ### Valid Custom Component Names
 ///
-/// A tag name is considered a custom component if it meets exactly one of these criteria:
+/// A tag name is considered a custom component if it meets any of these criteria:
 ///
 /// 1. **Starts with an uppercase letter (A-Z)**
 ///    - Examples: `<MyComponent>`, `<Counter>`, `<DataTable>`
 ///    - No dash required for uppercase names
 ///
-/// 2. **Starts with a lowercase letter (a-z) AND contains at least one dash (-)**
+/// 2. **Starts with a lowercase letter (a-z) and contains at least one dash (-)**
 ///    - Examples: `<my-component>`, `<data-table>`, `<custom-counter>`
 ///    - The dash distinguishes these from standard HTML tags
 ///

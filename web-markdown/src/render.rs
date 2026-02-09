@@ -194,11 +194,9 @@ where
 /// A valid custom component tag must:
 /// - Start with '<'
 /// - End with '>'
-/// - Not have any '<' or '>' in between (basic validity check)
 /// - Have a tag name that either:
 ///   - Starts with an uppercase letter (A-Z), OR
-///   - Starts with a lowercase letter (a-z) AND contains at least one dash (-)
-/// - After the tag name, only contain valid tag syntax (whitespace, `/`, `>`, or `=` for attributes)
+///   - Starts with a lowercase letter (a-z) and contains at least one dash (-)
 ///
 /// This validation prevents standard HTML tags like `<div>`, `<span>`, `<p>` from being
 /// treated as custom components while allowing custom component names like:
