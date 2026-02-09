@@ -49,14 +49,9 @@ To be recognized as a custom component, tag names must follow these rules:
 These rules ensure standard HTML tags like `<div>`, `<span>`, and `<p>` are not confused with custom components.
 
 **Valid custom components:**
-- `<MyComponent>` ✓ (uppercase start)
-- `<my-component>` ✓ (lowercase start with dash)
-- `<Counter initial="5"/>` ✓ (uppercase, self-closing with attributes)
-
-**NOT custom components:**
-- `<div>` ✗ (lowercase without dash - standard HTML)
-- `<span>` ✗ (lowercase without dash - standard HTML)
-- `<p>` ✗ (lowercase without dash - standard HTML)
+- `<MyComponent>` 
+- `<my-component>`
+- `<Counter initial="5"/>` 
 
 # Contribute
 
