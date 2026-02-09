@@ -194,9 +194,11 @@ where
 /// A valid custom component tag must:
 /// - Start with '<'
 /// - End with '>'
+/// - Not have any '<' or '>' in between (basic validity check)
 /// - Have a tag name that either:
 ///   - Starts with an uppercase letter (A-Z), OR
 ///   - Starts with a lowercase letter (a-z) AND contains at least one dash (-)
+/// - After the tag name, only contain valid tag syntax (whitespace, `/`, `>`, or `=` for attributes)
 ///
 /// This validation prevents standard HTML tags like `<div>`, `<span>`, `<p>` from being
 /// treated as custom components while allowing custom component names like:
@@ -208,6 +210,8 @@ where
 /// - Self-closing tags: `<My-Component/>`
 /// - Tags with attributes: `<My-Component attr="value">`
 /// - Closing tags: `</My-Component>`
+///
+/// Invalid HTML like `<Y and Y>` is rejected because "and" is not valid attribute syntax.
 fn can_be_custom_component(raw_html: &str) -> bool {
     let s = raw_html.trim();
     if s.len() < 3 {
@@ -215,9 +219,17 @@ fn can_be_custom_component(raw_html: &str) -> bool {
     }
 
     let chars: Vec<_> = s.chars().collect();
+    let len = chars.len();
 
     // Must start with '<' and end with '>'
-    if chars[0] != '<' || chars[chars.len() - 1] != '>' {
+    if chars[0] != '<' || chars[len - 1] != '>' {
+        return false;
+    }
+
+    // Check that there are no '<' or '>' characters in between
+    // This is a basic validity check that rejects malformed HTML like "<Y and Y>"
+    let middle = &chars[1..len - 1];
+    if middle.iter().any(|c| c == &'<' || c == &'>') {
         return false;
     }
 
@@ -253,7 +265,7 @@ fn can_be_custom_component(raw_html: &str) -> bool {
     // Valid if:
     // - Starts with uppercase letter (A-Z), OR
     // - Starts with lowercase letter (a-z) AND contains a dash
-    if first_char.is_ascii_uppercase() {
+    let is_custom_component_name = if first_char.is_ascii_uppercase() {
         // Uppercase start is always valid (e.g., MyComponent, My-Component)
         true
     } else if first_char.is_ascii_lowercase() && has_dash {
@@ -262,7 +274,47 @@ fn can_be_custom_component(raw_html: &str) -> bool {
     } else {
         // Otherwise not a custom component (e.g., div, span, p)
         false
+    };
+
+    if !is_custom_component_name {
+        return false;
     }
+
+    // Additional validation: after the tag name, we should only see:
+    // - '>' (end of tag)
+    // - '/' followed by '>' (self-closing tag)
+    // - Whitespace followed by attributes (which should contain '=' for key=value)
+    // This helps reject invalid HTML like "<Y and Y>" where "and Y" is not valid syntax
+
+    // Skip to after tag name
+    while idx < len && tag_name.chars().count() > 0 {
+        let c = chars[idx];
+        if c.is_whitespace() {
+            // Skip whitespace
+            idx += 1;
+        } else if c == '>' {
+            // Valid: simple closing tag
+            return true;
+        } else if c == '/' {
+            // Check if it's followed by '>'
+            return idx + 1 < len && chars[idx + 1] == '>';
+        } else {
+            // Must be start of attributes
+            // For valid attributes, we expect to find '=' somewhere
+            // This is a simple heuristic to reject things like "<Y and Y>"
+            let remaining: String = chars[idx..len - 1].iter().collect();
+            if remaining.contains('=') || remaining.is_empty() {
+                // Looks like it might have attributes
+                return true;
+            } else {
+                // No '=' found, so probably not valid attribute syntax
+                // Example: "<Y and Y>" would have remaining = "and Y"
+                return false;
+            }
+        }
+    }
+
+    true
 }
 
 impl<'a, 'callback, 'c, I, F> Iterator for Renderer<'a, 'callback, 'c, I, F>
@@ -407,7 +459,7 @@ where
             })
         } else {
             Some(match item {
-                Event::InlineHtml(ref x) => RenderEvent {
+                Event::InlineHtml(ref x) if can_be_custom_component(x) => RenderEvent {
                     // FIXME: avoid clone
                     custom_tag: Some(x.clone()),
                     event: item,
