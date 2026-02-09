@@ -356,11 +356,23 @@ where
     ///
     /// pulldown-cmark emits different event sequences based on HTML context:
     ///
-    /// ## Block-Level Self-Closing Tags
+    /// ## Block-Level Self-Closing Tags (Single Component)
     /// ```markdown
     /// <MyComponent/>
     /// ```
     /// Events: `Start(HtmlBlock)` → `Html("<MyComponent/>")` → `End(HtmlBlock)`
+    ///
+    /// ## Multiple Components on Separate Lines
+    /// ```markdown
+    /// <Component1/>
+    /// <Component2/>
+    /// ```
+    /// Events (may vary):
+    /// - **Option 1** (separate blocks): `Start(HtmlBlock)` → `Html("<Component1/>")` → `End(HtmlBlock)` → `Start(HtmlBlock)` → `Html("<Component2/>")` → `End(HtmlBlock)`
+    /// - **Option 2** (single block): `Start(HtmlBlock)` → `Html("<Component1/>\n")` → `Html("<Component2/>")` → `End(HtmlBlock)`
+    ///
+    /// The actual behavior depends on pulldown-cmark's HTML block detection heuristics.
+    /// This code handles both cases by conditionally consuming `End(HtmlBlock)` only when present.
     ///
     /// ## Block-Level Open Tags (with closing)
     /// ```markdown
@@ -376,15 +388,6 @@ where
     /// ```
     /// Events: `Start(Paragraph)` → `Text("text ")` → `InlineHtml("<MyComponent/>")` → `Text(" more text")` → `End(Paragraph)`
     /// Note: NO `HtmlBlock` events for inline HTML
-    ///
-    /// ## Multiple Components on Separate Lines
-    /// ```markdown
-    /// <Component1/>
-    /// <Component2/>
-    /// ```
-    /// Events:
-    /// - `Start(HtmlBlock)` → `Html("<Component1/>")` → `End(HtmlBlock)`
-    /// - `Start(HtmlBlock)` → `Html("<Component2/>")` → `End(HtmlBlock)`
     ///
     /// ## Multiple Components on Same Line
     /// ```markdown
@@ -426,10 +429,8 @@ where
             // - Open tags like <X> may not have an immediate End(HtmlBlock)
             // - Inline HTML (InlineHtml event) never produces HtmlBlock events
             // - Whitespace and newlines affect whether HTML is block-level or inline
-            let should_consume = match self.stream.peek() {
-                Some((Event::End(TagEnd::HtmlBlock), _)) => true,
-                _ => false,
-            };
+            let should_consume =
+                matches!(self.stream.peek(), Some((Event::End(TagEnd::HtmlBlock), _)));
             if should_consume {
                 self.stream.next(); // consume the End event
             }
