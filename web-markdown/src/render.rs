@@ -189,21 +189,80 @@ where
     current_component: Option<String>,
 }
 
-/// Returns true if `raw_html`:
-/// - starts with '<'
-/// - ends with '>'
-/// - does not have any '<' or '>' in between.
+/// Returns true if `raw_html` appears to be a custom component tag.
 ///
-/// TODO:
-/// An string attribute can a ">" character.
+/// A valid custom component tag must:
+/// - Start with '<'
+/// - End with '>'
+/// - Have a tag name that either:
+///   - Starts with an uppercase letter (A-Z), OR
+///   - Starts with a lowercase letter (a-z) AND contains at least one dash (-)
+///
+/// This validation prevents standard HTML tags like `<div>`, `<span>`, `<p>` from being
+/// treated as custom components while allowing custom component names like:
+/// - `<MyComponent>` (uppercase start, no dash needed)
+/// - `<my-component>` (lowercase start, has dash)
+/// - `<My-Component>` (uppercase start, has dash)
+///
+/// The function also handles:
+/// - Self-closing tags: `<My-Component/>`
+/// - Tags with attributes: `<My-Component attr="value">`
+/// - Closing tags: `</My-Component>`
 fn can_be_custom_component(raw_html: &str) -> bool {
-    let chars: Vec<_> = raw_html.trim().chars().collect();
-    let len = chars.len();
-    if len < 3 {
+    let s = raw_html.trim();
+    if s.len() < 3 {
         return false;
-    };
-    let (fst, middle, last) = (chars[0], &chars[1..len - 1], chars[len - 1]);
-    fst == '<' && last == '>' && middle.iter().all(|c| c != &'<' && c != &'>')
+    }
+
+    let chars: Vec<_> = s.chars().collect();
+
+    // Must start with '<' and end with '>'
+    if chars[0] != '<' || chars[chars.len() - 1] != '>' {
+        return false;
+    }
+
+    // Extract tag name: skip '<' and optionally '/' for closing tags
+    let mut idx = 1;
+    if idx < chars.len() && chars[idx] == '/' {
+        idx += 1;
+    }
+
+    if idx >= chars.len() {
+        return false;
+    }
+
+    // Parse tag name until we hit whitespace, '/', or '>'
+    let mut tag_name = String::new();
+    while idx < chars.len() {
+        let c = chars[idx];
+        if c.is_whitespace() || c == '/' || c == '>' {
+            break;
+        }
+        tag_name.push(c);
+        idx += 1;
+    }
+
+    if tag_name.is_empty() {
+        return false;
+    }
+
+    // Check if tag name is valid for a custom component
+    let first_char = tag_name.chars().next().unwrap();
+    let has_dash = tag_name.contains('-');
+
+    // Valid if:
+    // - Starts with uppercase letter (A-Z), OR
+    // - Starts with lowercase letter (a-z) AND contains a dash
+    if first_char.is_ascii_uppercase() {
+        // Uppercase start is always valid (e.g., MyComponent, My-Component)
+        true
+    } else if first_char.is_ascii_lowercase() && has_dash {
+        // Lowercase start is only valid if it has a dash (e.g., my-component)
+        true
+    } else {
+        // Otherwise not a custom component (e.g., div, span, p)
+        false
+    }
 }
 
 impl<'a, 'callback, 'c, I, F> Iterator for Renderer<'a, 'callback, 'c, I, F>
