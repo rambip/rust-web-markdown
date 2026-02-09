@@ -34,6 +34,30 @@ see [here](https://rambip.github.io/rust-web-markdown/onclick)
 ## Custom Components
 see [here](https://rambip.github.io/rust-web-markdown/custom-components)
 
+Custom components allow you to embed interactive or custom-styled elements in your markdown.
+
+### Custom Component Naming Rules
+
+To be recognized as a custom component, tag names must follow these rules:
+
+1. **Uppercase start** - Tags starting with an uppercase letter (A-Z) are always treated as custom components
+   - Examples: `<MyComponent>`, `<Counter>`, `<DataTable>`
+   
+2. **Lowercase with dash** - Tags starting with lowercase (a-z) must contain at least one dash (-)
+   - Examples: `<my-component>`, `<data-table>`, `<custom-counter>`
+
+These rules ensure standard HTML tags like `<div>`, `<span>`, and `<p>` are not confused with custom components.
+
+**Valid custom components:**
+- `<MyComponent>` ✓ (uppercase start)
+- `<my-component>` ✓ (lowercase start with dash)
+- `<Counter initial="5"/>` ✓ (uppercase, self-closing with attributes)
+
+**NOT custom components:**
+- `<div>` ✗ (lowercase without dash - standard HTML)
+- `<span>` ✗ (lowercase without dash - standard HTML)
+- `<p>` ✗ (lowercase without dash - standard HTML)
+
 # Contribute
 
 PRs are **very much** appreciated.

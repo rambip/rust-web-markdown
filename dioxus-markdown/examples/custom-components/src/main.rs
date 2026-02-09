@@ -17,11 +17,11 @@ A counter which modifies the document:
 <PersistedCounter value="5"/>
 
 ## Here is a Box:
-<box>
+<custom-box>
 
 **I am in a blue box !**
 
-</box>
+</custom-box>
 "#;
 
 /// A counter who's current count is not stored in the document.
@@ -80,7 +80,7 @@ fn App() -> Element {
         })
     });
 
-    components.register("box", |props| {
+    components.register("custom-box", |props| {
         let children = props.children;
         Ok(rsx! {
             ColorBox { children }

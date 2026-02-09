@@ -189,21 +189,60 @@ where
     current_component: Option<String>,
 }
 
-/// Returns true if `raw_html`:
-/// - starts with '<'
-/// - ends with '>'
-/// - does not have any '<' or '>' in between.
+/// Returns true if `raw_html` appears to be a custom component tag.
 ///
-/// TODO:
-/// An string attribute can a ">" character.
+/// A valid custom component tag must:
+/// - Start with '<'
+/// - End with '>'
+/// - Have a tag name that either:
+///   - Starts with an uppercase letter (A-Z), OR
+///   - Starts with a lowercase letter (a-z) and contains at least one dash (-)
+///
+/// This validation prevents standard HTML tags like `<div>`, `<span>`, `<p>` from being
+/// treated as custom components while allowing custom component names like:
+/// - `<MyComponent>` (uppercase start, no dash needed)
+/// - `<my-component>` (lowercase start, has dash)
+/// - `<My-Component>` (uppercase start, has dash)
+///
+/// The function also handles:
+/// - Self-closing tags: `<My-Component/>`
+/// - Tags with attributes: `<My-Component attr="value">`
+/// - Closing tags: `</My-Component>`
+///
+/// Invalid HTML like `<Y and Y>` is rejected because "and" is not valid attribute syntax.
 fn can_be_custom_component(raw_html: &str) -> bool {
-    let chars: Vec<_> = raw_html.trim().chars().collect();
-    let len = chars.len();
-    if len < 3 {
-        return false;
-    };
-    let (fst, middle, last) = (chars[0], &chars[1..len - 1], chars[len - 1]);
-    fst == '<' && last == '>' && middle.iter().all(|c| c != &'<' && c != &'>')
+    lazy_static::lazy_static! {
+        // Regex patterns for custom component tags:
+
+        // Simple tags: <MyComponent> or </MyComponent> or <my-component> or </my-component>
+        // ^<                                       - starts with <
+        // /?                                       - optional / for closing tags
+        // ([A-Z][A-Za-z0-9-]*                      - uppercase start with optional alphanumeric and dashes
+        //  |[a-z][A-Za-z0-9]*-[A-Za-z0-9-]*)       - OR lowercase start with at least one dash
+        // >$                                       - ends with >
+        static ref SIMPLE_TAG_RE: regex::Regex = regex::Regex::new(
+            r"^</?([A-Z][A-Za-z0-9-]*|[a-z][A-Za-z0-9]*-[A-Za-z0-9-]*)>$"
+        ).unwrap();
+
+        // Self-closing tags: <MyComponent/> or <my-component/>
+        static ref SELF_CLOSING_RE: regex::Regex = regex::Regex::new(
+            r"^<([A-Z][A-Za-z0-9-]*|[a-z][A-Za-z0-9]*-[A-Za-z0-9-]*)/\s*>$"
+        ).unwrap();
+
+        // Tags with attributes: <MyComponent attr="value"> or <my-component attr="value"/>
+        // After the tag name, we must have whitespace followed by content that contains '='
+        // This rejects things like "<Y and Y>" where there's no '='
+        // Note: The regex is non-greedy and will match the smallest possible string,
+        // so escaped characters like &lt; or &gt; in attributes are allowed
+        static ref WITH_ATTRS_RE: regex::Regex = regex::Regex::new(
+            r"^</?([A-Z][A-Za-z0-9-]*|[a-z][A-Za-z0-9]*-[A-Za-z0-9-]*)\s+.*?=.*?/?\s*>$"
+        ).unwrap();
+    }
+
+    let s = raw_html.trim();
+
+    // Try to match with regex patterns
+    SIMPLE_TAG_RE.is_match(s) || SELF_CLOSING_RE.is_match(s) || WITH_ATTRS_RE.is_match(s)
 }
 
 impl<'a, 'callback, 'c, I, F> Iterator for Renderer<'a, 'callback, 'c, I, F>
@@ -348,7 +387,7 @@ where
             })
         } else {
             Some(match item {
-                Event::InlineHtml(ref x) => RenderEvent {
+                Event::InlineHtml(ref x) if can_be_custom_component(x) => RenderEvent {
                     // FIXME: avoid clone
                     custom_tag: Some(x.clone()),
                     event: item,
@@ -583,5 +622,102 @@ where
             }
             Tag::Subscript => return Err(HtmlError::not_implemented("subscript not implemented")),
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_can_be_custom_component_uppercase_start() {
+        // Uppercase start should always be valid
+        assert!(can_be_custom_component("<MyComponent>"));
+        assert!(can_be_custom_component("<Counter>"));
+        assert!(can_be_custom_component("<DataTable>"));
+        assert!(can_be_custom_component("<MyComponent/>"));
+        assert!(can_be_custom_component("</MyComponent>"));
+        assert!(can_be_custom_component("<MyComponent attr=\"value\">"));
+        assert!(can_be_custom_component("<My-Component>"));
+        assert!(can_be_custom_component("<MY-COMPONENT>"));
+    }
+
+    #[test]
+    fn test_can_be_custom_component_lowercase_with_dash() {
+        // Lowercase start with dash should be valid
+        assert!(can_be_custom_component("<my-component>"));
+        assert!(can_be_custom_component("<data-table>"));
+        assert!(can_be_custom_component("<custom-counter>"));
+        assert!(can_be_custom_component("<my-component/>"));
+        assert!(can_be_custom_component("</my-component>"));
+        assert!(can_be_custom_component("<my-component attr=\"value\">"));
+        assert!(can_be_custom_component("<a-b>"));
+        assert!(can_be_custom_component("<my-custom-widget>"));
+    }
+
+    #[test]
+    fn test_can_be_custom_component_lowercase_no_dash() {
+        // Lowercase start without dash should be invalid (standard HTML tags)
+        assert!(!can_be_custom_component("<div>"));
+        assert!(!can_be_custom_component("<span>"));
+        assert!(!can_be_custom_component("<p>"));
+        assert!(!can_be_custom_component("<section>"));
+        assert!(!can_be_custom_component("<article>"));
+        assert!(!can_be_custom_component("<header>"));
+        assert!(!can_be_custom_component("<footer>"));
+        assert!(!can_be_custom_component("<div/>"));
+        assert!(!can_be_custom_component("</div>"));
+        assert!(!can_be_custom_component("<div class=\"test\">"));
+    }
+
+    #[test]
+    fn test_can_be_custom_component_edge_cases() {
+        // Empty or invalid tags
+        assert!(!can_be_custom_component("<>"));
+        assert!(!can_be_custom_component("</>"));
+        assert!(!can_be_custom_component(""));
+        assert!(!can_be_custom_component("< >"));
+        assert!(!can_be_custom_component("text"));
+
+        // Missing brackets
+        assert!(!can_be_custom_component("MyComponent>"));
+        assert!(!can_be_custom_component("<MyComponent"));
+
+        // Whitespace handling
+        assert!(can_be_custom_component("  <MyComponent>  "));
+        assert!(can_be_custom_component("  <my-component>  "));
+        assert!(!can_be_custom_component("  <div>  "));
+    }
+
+    #[test]
+    fn test_can_be_custom_component_with_attributes() {
+        // With attributes
+        assert!(can_be_custom_component(
+            "<Counter initial=\"5\" step=\"1\"/>"
+        ));
+        assert!(can_be_custom_component(
+            "<my-widget data=\"test\" class=\"styled\"/>"
+        ));
+        assert!(!can_be_custom_component(
+            "<div class=\"container\" id=\"main\">"
+        ));
+    }
+
+    #[test]
+    fn test_can_be_custom_component_self_closing() {
+        // Self-closing tags
+        assert!(can_be_custom_component("<MyComponent/>"));
+        assert!(can_be_custom_component("<my-component/>"));
+        assert!(!can_be_custom_component("<div/>"));
+        assert!(!can_be_custom_component("<span/>"));
+    }
+
+    #[test]
+    fn test_can_be_custom_component_closing_tags() {
+        // Closing tags
+        assert!(can_be_custom_component("</MyComponent>"));
+        assert!(can_be_custom_component("</my-component>"));
+        assert!(!can_be_custom_component("</div>"));
+        assert!(!can_be_custom_component("</span>"));
     }
 }

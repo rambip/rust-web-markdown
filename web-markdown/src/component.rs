@@ -1,7 +1,44 @@
 use std::collections::BTreeMap;
 
-/// A custom non-native html element
-/// defined inside markdown.
+/// A custom non-native html element defined inside markdown.
+///
+/// ## Custom Component Naming Rules
+///
+/// Custom components are identified by their tag names, which must follow specific rules
+/// to distinguish them from standard HTML tags:
+///
+/// ### Valid Custom Component Names
+///
+/// A tag name is considered a custom component if it meets any of these criteria:
+///
+/// 1. **Starts with an uppercase letter (A-Z)**
+///    - Examples: `<MyComponent>`, `<Counter>`, `<DataTable>`
+///    - No dash required for uppercase names
+///
+/// 2. **Starts with a lowercase letter (a-z) and contains at least one dash (-)**
+///    - Examples: `<my-component>`, `<data-table>`, `<custom-counter>`
+///    - The dash distinguishes these from standard HTML tags
+///
+/// This ensures that standard HTML tags (like `<div>`, `<span>`, `<p>`) are never confused
+/// with custom components. Custom component tags support start tags, end tags, self-closing
+/// tags, and tags with attributes (e.g., `<MyComponent key="value" name="test"/>`).
+///
+/// ### Examples
+///
+/// ```markdown
+/// <!-- Valid custom components -->
+/// <Counter initial="5"/>
+/// <my-widget/>
+/// <DataTable>content</DataTable>
+/// <custom-box>
+///   **Bold text inside custom component**
+/// </custom-box>
+///
+/// <!-- NOT custom components (standard HTML) -->
+/// <div>text</div>
+/// <span>text</span>
+/// <p>paragraph</p>
+/// ```
 #[derive(Debug, PartialEq)]
 pub struct ComponentCall<'a> {
     /// Where in the larger document full_string starts.

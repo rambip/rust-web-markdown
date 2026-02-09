@@ -4554,6 +4554,7 @@ dependencies = [
  "katex-rs",
  "lazy_static",
  "pulldown-cmark",
+ "regex",
  "syntect",
  "web-sys",
 ]
